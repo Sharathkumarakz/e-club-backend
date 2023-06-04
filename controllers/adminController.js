@@ -98,8 +98,8 @@ const addToBlacklist=async(req,res,next)=>{
     try {
        console.log("rrrrrr");
         let updated= await Club.updateOne({_id:req.params.id},{$set:{isblacklisted:true}})  
-        console.log(updated);
-        res.send(updated)
+        const GettingClub = await Club.find({})
+        res.send(GettingClub)
     } catch (error) {
         return res.status(401).send({
             welcome:"UnAuthenticated" 

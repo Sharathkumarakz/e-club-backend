@@ -53,7 +53,7 @@ const clubRegister = async (req, res, next) => {
         clubName: clubName,
         securityCode: hashedcode,
         category: category,
-        place: place,
+        address: place,
         registerNo: registerNo,
         president: presidentActive._id,
         secretory: secretoryActive._id,
@@ -84,6 +84,12 @@ let joinClub = async (req, res, next) => {
       } else {
         const cookie = req.cookies['jwt']
         const claims = jwt.verify(cookie, "TheSecretKey")
+  // let userData=await User.findOne({id:claims._id})
+  // if(userData.isBlocked===true){
+  //   return res.status(401).send({
+  //     message: "You are blocked"
+  //   })
+  // }
         if (!claims) {
           return res.status(401).send({
             message: "UnAuthenticated"
@@ -134,21 +140,39 @@ let joinClub = async (req, res, next) => {
 
 
 
+// const clubData = async (req, res, next) => {
+//   try {
+//     console.log(req.params.id);
+//     console.log("getting club data");
+//     const gettingClub = await Club.findOne({ _id: req.params.id })
+//     const { password, ...data } = await gettingClub.toJSON()
+
+//     res.send(data)
+
+//   } catch (error) {
+//     next(error);
+//   }
+
+// }
 const clubData = async (req, res, next) => {
   try {
-    console.log(req.params.id);
-    console.log("getting club data");
-    const gettingClub = await Club.findOne({ _id: req.params.id })
-    const { password, ...data } = await gettingClub.toJSON()
-
-    res.send(data)
-
+    const cookie = req.cookies['jwt']
+    const claims = jwt.verify(cookie, "TheSecretKey")
+    if (!claims) {
+      return res.status(401).send({
+        message: "UnAuthenticated"
+      })
+    }
+    let userdata=await User.findOne({_id:claims._id})
+    const  gettingClub= await Club.findOne({ _id: req.params.id }).populate('president').populate('secretory').populate('treasurer')
+     let data=gettingClub 
+     let user={id:userdata._id}
+    res.send({data: data,user:user})
   } catch (error) {
     next(error);
   }
 
 }
-
 
 
 const profilePictureUpdate = async (req, res, next) => {

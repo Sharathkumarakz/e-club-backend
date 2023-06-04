@@ -20,6 +20,7 @@ const clubRegister = async (req, res, next) => {
     let president = req.body.president
     let secretory = req.body.secretory
     let treasurer = req.body.treasurer
+    
     const check = await Club.findOne({ clubName: clubName })
     console.log("here");
     if (check) {
@@ -74,7 +75,6 @@ const clubRegister = async (req, res, next) => {
 
 let joinClub = async (req, res, next) => {
   try {
-    console.log("jjjjjjjjjjjjjjjj");
     let found = await Club.findOne({ clubName: req.body.clubName });
     if (found) {
       if (!(await bcrypt.compare(req.body.securityCode, found.securityCode))) {
@@ -110,20 +110,9 @@ let joinClub = async (req, res, next) => {
             {_id:claims._id},
               {$addToSet: {clubs:{$each:[{clubName: req.body.clubName, password:req.body.securityCode}]}}});
         }
-    
-        if (found.president.toString() === claims._id.toString()) {
-          return res.json({ president: true, id: found._id });
-        }
-        if (found.secretory.toString() === claims._id.toString()) {
-          return res.json({ secretory: true, id: found._id })
-        }
-        if (found.treasurer.toString() === claims._id.toString()) {
-          return res.json({ treasurer: true, id: found._id })
-        }
-        if (found.members.includes(claims._id)) {
-          return res.json({ member: true, id: found._id })
-        }
-        else {
+        if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString()||found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
+          return res.json({ authenticated: true, id: found._id });
+        } else {
           return res.json({ notAllowed: true })
         }
       }
@@ -262,15 +251,8 @@ const userRole = async (req, res, next) => {
         });
       }
 
-
-      if (found.president.toString() === claims._id.toString()) {
-        return res.json({ president: true, id: found._id });
-      } else if (found.secretory.toString() === claims._id.toString()) {
-        return res.json({ secretory: true, id: found._id })
-      } else if (found.treasurer.toString() === claims._id.toString()) {
-        return res.json({ treasurer: true, id: found._id })
-      } else if (found.members.includes(claims._id)) {
-        return res.json({ member: true, id: found._id })
+      if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString()||found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
+        return res.json({ authenticated: true, id: found._id });
       } else {
         console.log("eeeelse");
         return res.json({ notAllowed: true })
@@ -347,17 +329,18 @@ const editClubProfile = async (req, res, next) => {
     const club = await Club.findOne({ _id: req.params.id })
     const clubnameFound = await Club.findOne({ clubName: req.body.clubName })
     if (clubnameFound) {
-      console.log("eethi");
+      
+      console.log(req.body);
       if (req.body.clubName === clubnameFound.clubName && clubnameFound.secretory.toString() === club.secretory.toString() && club.president.toString() === clubnameFound.president.toString() && clubnameFound.registerNo === club.registerNo) {
         console.log("nothinggg");
-        let update = await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, place:req.body.place, category: req.body.category, registerNo: req.body.regiterNo ,} })
+        let update = await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, address:req.body.place, category: req.body.category, registerNo: req.body.regiterNo ,} })
       } else {
         return res.status(401).send({
           message: "Club name is not available"
         });
       }
     } else {
-      let update = await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, place:req.body.place, category: req.body.category, registerNo: req.body.regiterNo } })
+      let update = await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, address:req.body.place, category: req.body.category, registerNo: req.body.regiterNo } })
     }
 
     const gettingClub = await Club.findOne({ _id: req.params.id })

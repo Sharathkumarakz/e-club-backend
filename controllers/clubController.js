@@ -8,6 +8,7 @@ const Event = require('../models/events');
 const upload = require('../middlewares/multer')
 const { ObjectId } = require('mongodb');
 const { request } = require('express');
+const { logOut } = require("./userController");
 
 const clubRegister = async (req, res, next) => {
   try {
@@ -17,10 +18,8 @@ const clubRegister = async (req, res, next) => {
     let place = req.body.place;
     let securityCode = req.body.securityCode;
     let category = req.body.category;
-    let president = req.body.president
     let secretory = req.body.secretory
     let treasurer = req.body.treasurer
-    
     const check = await Club.findOne({ clubName: clubName })
     console.log("here");
     if (check) {
@@ -28,7 +27,15 @@ const clubRegister = async (req, res, next) => {
         message: "This club name is not available"
       })
     } else {
-      let presidentActive = await User.findOne({ email: president }).exec()
+      const cookie = req.cookies['jwt']
+      const claims = jwt.verify(cookie, "TheSecretKey")
+      if (!claims) {
+        return res.status(401).send({
+          message: "UnAuthenticated"
+        })
+      }
+      // let userData=await User.findOne({_id:claims._id})
+      let presidentActive = await User.findOne({_id:claims._id }).exec()
       let secretoryActive = await User.findOne({ email: secretory }).exec()
       let treasurerActive = await User.findOne({ email: treasurer }).exec()
 
@@ -45,6 +52,11 @@ const clubRegister = async (req, res, next) => {
       if (!treasurerActive) {
         return res.status(400).send({
           message: "treasurer not available"
+        })
+      }
+      if(presidentActive.email===secretory ||presidentActive.email===treasurer ){
+        return res.status(400).send({
+          message: "You get a president role, so you cant be a treasurer or secretory!"
         })
       }
       console.log(treasurerActive);
@@ -76,12 +88,18 @@ const clubRegister = async (req, res, next) => {
 let joinClub = async (req, res, next) => {
   try {
     let found = await Club.findOne({ clubName: req.body.clubName });
+    console.log(req.body.category);
+    if(found.category!=req.body.category){
+      return res.status(404).send({
+        message: "Category failed to match"
+      })
+    }
     if (found) {
       if (!(await bcrypt.compare(req.body.securityCode, found.securityCode))) {
         return res.status(404).send({
           message: "secretCode is Incorrect"
-        })
-      } else {
+        }) 
+      }else {
         const cookie = req.cookies['jwt']
         const claims = jwt.verify(cookie, "TheSecretKey")
   // let userData=await User.findOne({id:claims._id})
@@ -102,14 +120,62 @@ let joinClub = async (req, res, next) => {
             $elemMatch: {
               clubName: req.body.clubName,
               password: req.body.securityCode,
+              club:found._id
             },
           },
         });
         if(!existingUser){
           let Update = await User.updateOne(
             {_id:claims._id},
-              {$addToSet: {clubs:{$each:[{clubName: req.body.clubName, password:req.body.securityCode}]}}});
+              {$addToSet: {clubs:{$each:[{clubName: req.body.clubName, password:req.body.securityCode,club:found._id}]}}});
         }
+        if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString()||found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
+          return res.json({ authenticated: true, id: found._id });
+        } else {
+          return res.json({ notAllowed: true })
+        }
+      }
+    } else {
+      return res.status(404).send({
+        message: "There is no such club"
+      })
+    }
+
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+
+let joinClub2 = async (req, res, next) => {
+  try {
+    let found = await Club.findOne({ clubName: req.body.clubName });
+    if (found) {
+      if (!(await bcrypt.compare(req.body.securityCode, found.securityCode))) {
+        const cookie = req.cookies['jwt']
+        const claims = jwt.verify(cookie, "TheSecretKey")
+
+        if (!claims) {
+          return res.status(401).send({
+            message: "UnAuthenticated"
+          })
+        }
+        const result = await User.updateOne(
+          { _id:claims._id },
+          { $pull: { clubs: { clubName:req.body.clubName } } }
+        );
+        return res.json({ changed: true })
+      }else {
+        const cookie = req.cookies['jwt']
+        const claims = jwt.verify(cookie, "TheSecretKey")
+
+        if (!claims) {
+          return res.status(401).send({
+            message: "UnAuthenticated"
+          })
+        }
+  
         if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString()||found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
           return res.json({ authenticated: true, id: found._id });
         } else {
@@ -426,5 +492,5 @@ module.exports = {
   editClubProfile,
   updateSecurityCode,
   updateCommitee,
-
+  joinClub2
 }

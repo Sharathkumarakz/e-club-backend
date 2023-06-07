@@ -39,6 +39,8 @@ uRoute.post('/register/club',clubController.clubRegister)
 
 uRoute.post('/join/club',clubController.joinClub)
 
+uRoute.post('/profile/join/club',clubController.joinClub2)
+
 uRoute.get('/club/:id',clubController.clubData)
 
 
@@ -74,5 +76,10 @@ uRoute.get('/club/events/:id',eventsController.getEvents)
 
 uRoute.post('/club/deleteEvent/:id',eventsController.deleteEvent)
 
+uRoute.get('/user/:id/verify/:token',userController.verify)
 
+uRoute.get('/user/clubs',userController.getClubs)
+
+
+// uRoute.post('/user/verified/:id',userController.verified)
 module.exports = uRoute;

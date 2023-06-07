@@ -34,6 +34,10 @@ const userSchema=new mongoose.Schema({
     type:Boolean,
     default:false
   },
+  verified:{
+    type:Boolean,
+    default:false
+  },
   clubs:[
     {
       clubName:{
@@ -43,7 +47,12 @@ const userSchema=new mongoose.Schema({
       password:{
         type:String,
         default:null
-      }
+      },
+      club:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Club",
+        required: true,
+      } 
     }
   ]
 

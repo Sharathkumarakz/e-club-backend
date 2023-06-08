@@ -56,7 +56,10 @@ uRoute.get('/club/roleAuthentication/:id',clubController.userRole)
 
 uRoute.post('/club/addMember/:id',clubController.addMember)
 
+
+
 uRoute.post('/club/members/:id',clubController.getMembers)
+uRoute.post('/club/memberslist/:id',clubController.getMemberstest)
 
 uRoute.post('/club/deleteMember',clubController.deleteMembers)
 

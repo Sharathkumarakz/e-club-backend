@@ -375,9 +375,30 @@ const getMembers = async (req, res, next) => {
   }
 };
 
+
+const getMemberstest = async (req, res, next) => {
+  try {
+    const populatedMembers = await Club.findById(req.params.id)
+    .populate({
+      path: 'members',
+      select: '-_id' // Exclude the _id field
+    })
+    .lean()
+    .select('members');  
+    res.send(populatedMembers);
+  } catch (error) {
+    return res.status(401).send({
+      message: "Unauthenticated"
+    });
+  }
+};
+
+
 const deleteMembers = async (req, res, next) => {
   try {
-    let adding = await Club.updateOne({ _id: req.body.club }, { $pull: { members: req.body.user } })
+    console.log(req.body.club,req.body.user );
+    let user=await User.findOne({email:req.body.user})
+    let adding = await Club.updateOne({ _id: req.body.club }, { $pull: { members:user._id } })
     console.log(adding, "nnnnnnnnnnnnnnnnnnnnnnnnn");
     const club = await Club.findById(req.body.club).populate('members').exec();
     res.send(club);
@@ -492,5 +513,6 @@ module.exports = {
   editClubProfile,
   updateSecurityCode,
   updateCommitee,
-  joinClub2
+  joinClub2,
+  getMemberstest
 }

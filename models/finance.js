@@ -25,7 +25,15 @@ const financeSchema=new mongoose.Schema({
       status:{
         type:Boolean,
         required:true
-      },   
+      },
+      paymentMethod:{
+        type:String,
+        default:"cash"
+      },
+      stripeId:{
+        type:String,
+        default:null
+      } 
 });
 
 module.exports=mongoose.model("Finance",financeSchema);

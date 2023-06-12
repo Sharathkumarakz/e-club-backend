@@ -1,0 +1,21 @@
+const mongoose=require('mongoose');
+
+const notificationSchema=new mongoose.Schema({
+ 
+    clubId:{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+     message:{
+        type:String,
+        required:true
+      },
+      date:{
+        type:Date,
+        default:Date.now(),
+        expires:3600
+      }
+});
+
+module.exports=mongoose.model("Notification",notificationSchema);

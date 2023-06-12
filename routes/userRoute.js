@@ -15,7 +15,8 @@ const userController=require("../controllers/userController")
 const clubController=require("../controllers/clubController")
 const financeController=require("../controllers/financeController")
 const eventsController=require("../controllers/eventController")
-
+const paymentController=require("../controllers/paymentController")
+const notificationController=require("../controllers/notificationsController")
 uRoute.post('/register',userController.userRegister)
 
 
@@ -50,16 +51,15 @@ uRoute.post('/club/addPost/:id',upload.single('image'),clubController.addPost)
 
 uRoute.get('/club/posts/:id',clubController.getPosts)
 
-uRoute.get('/club/deletePost/:id',clubController.deletePost)
+uRoute.post('/club/deletePost/:id',clubController.deletePost)
 
 uRoute.get('/club/roleAuthentication/:id',clubController.userRole)
 
 uRoute.post('/club/addMember/:id',clubController.addMember)
 
 
-
 uRoute.post('/club/members/:id',clubController.getMembers)
-uRoute.post('/club/memberslist/:id',clubController.getMemberstest)
+uRoute.get('/club/memberslist/:id',clubController.getMemberstest)
 
 uRoute.post('/club/deleteMember',clubController.deleteMembers)
 
@@ -83,6 +83,17 @@ uRoute.get('/user/:id/verify/:token',userController.verify)
 
 uRoute.get('/user/clubs',userController.getClubs)
 
+uRoute.post('/club/checkout/:id',paymentController.makePayment)
 
-// uRoute.post('/user/verified/:id',userController.verified)
+
+uRoute.post('/club/stripe/:id',paymentController.setStripe)
+
+uRoute.get('/user/payment/:id',paymentController.getPaymentDetails)
+
+uRoute.post('/club/notifications/:id',notificationController.sendNotification)
+
+uRoute.get('/club/getNotifications/:id',notificationController.getNotifications)
+
+
 module.exports = uRoute;
+

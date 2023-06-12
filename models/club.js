@@ -21,6 +21,11 @@ const clubSchema=new mongoose.Schema({
         type:String,
         required:true
       },
+      stripe:{
+        type:String,
+        required:false,
+        default:null
+      },
       president:{
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",

@@ -21,6 +21,7 @@ const { ObjectId } = require('mongodb');
                 amount: amount,
                 date: date,
                 status:status
+               
             })
             if(status===true){
            
@@ -42,7 +43,7 @@ const { ObjectId } = require('mongodb');
     
     const getFinancialData=async (req,res,next)=>{
         try {
-         let financial=await Finance.find({clubName:req.params.id}).sort({date:1})
+         let financial=await Finance.find({clubName:req.params.id}).sort({_id:-1})
          res.send(financial)
         } catch (error) {
             next(error);

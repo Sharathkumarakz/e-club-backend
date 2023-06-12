@@ -34,7 +34,6 @@ const clubRegister = async (req, res, next) => {
           message: "UnAuthenticated"
         })
       }
-      // let userData=await User.findOne({_id:claims._id})
       let presidentActive = await User.findOne({_id:claims._id }).exec()
       let secretoryActive = await User.findOne({ email: secretory }).exec()
       let treasurerActive = await User.findOne({ email: treasurer }).exec()
@@ -102,12 +101,6 @@ let joinClub = async (req, res, next) => {
       }else {
         const cookie = req.cookies['jwt']
         const claims = jwt.verify(cookie, "TheSecretKey")
-  // let userData=await User.findOne({id:claims._id})
-  // if(userData.isBlocked===true){
-  //   return res.status(401).send({
-  //     message: "You are blocked"
-  //   })
-  // }
         if (!claims) {
           return res.status(401).send({
             message: "UnAuthenticated"
@@ -193,22 +186,6 @@ let joinClub2 = async (req, res, next) => {
   }
 }
 
-
-
-// const clubData = async (req, res, next) => {
-//   try {
-//     console.log(req.params.id);
-//     console.log("getting club data");
-//     const gettingClub = await Club.findOne({ _id: req.params.id })
-//     const { password, ...data } = await gettingClub.toJSON()
-
-//     res.send(data)
-
-//   } catch (error) {
-//     next(error);
-//   }
-
-// }
 const clubData = async (req, res, next) => {
   try {
     const cookie = req.cookies['jwt']
@@ -235,9 +212,7 @@ const profilePictureUpdate = async (req, res, next) => {
   images = req.file.filename
   try {
     const updated = await Club.updateOne({ _id: req.params.id }, { $set: { image: images } })
-    const gettingClub = await Club.findOne({ _id: req.params.id })
-    const { password, ...data } = await gettingClub.toJSON()
-    res.send(data)
+    res.send(updated)
   } catch (err) {
     return res.status(401).send({
       welcome: "UnAuthenticated"
@@ -263,8 +238,8 @@ const addPost = async (req, res, next) => {
       image: images
     })
     const added = await post.save();
-    const gettingPost = await Post.find({ clubName: req.params.id })
-    res.send(gettingPost)
+ 
+    res.send(added)
   } catch (err) {
     return res.status(401).send({
       welcome: "UnAuthenticated"
@@ -276,8 +251,6 @@ const addPost = async (req, res, next) => {
 const getPosts = async (req, res, next) => {
   try {
     const gettingPost = await Post.find({ clubName: req.params.id })
-
-    // const {password,...data}=await gettingPost.toJSON()
     res.send(gettingPost)
   } catch (error) {
     return res.status(401).send({
@@ -288,12 +261,8 @@ const getPosts = async (req, res, next) => {
 
 const deletePost = async (req, res, next) => {
   try {
-
-    let postdetail = await Post.findOne({ _id: req.params.id })
     const deleting = await Post.deleteOne({ _id: req.params.id })
-    const gettingPost = await Post.find({ clubName: postdetail.clubName })
-
-    res.send(gettingPost)
+    res.send(deleting)
   } catch (error) {
     return res.status(401).send({
       welcome: "UnAuthenticated"
@@ -341,6 +310,11 @@ const addMember = async (req, res, next) => {
         message: "There is no such user"
       })
     }
+    if (found.secretory.toString() === userFound._id.toString() || found.treasurer.toString() === userFound._id.toString()||found.president.toString() === userFound._id.toString()) {
+      return res.status(404).send({
+        message: "You are a main part of this club so, can't add you as a member"
+      })
+    }
     let isAvailable = await Club.findOne({ _id: req.params.id })
     if (!isAvailable.members.includes(userFound._id)) {
       if (found) {
@@ -381,7 +355,7 @@ const getMemberstest = async (req, res, next) => {
     const populatedMembers = await Club.findById(req.params.id)
     .populate({
       path: 'members',
-      select: '-_id' // Exclude the _id field
+      select: '-_id' 
     })
     .lean()
     .select('members');  

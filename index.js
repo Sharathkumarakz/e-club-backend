@@ -11,6 +11,9 @@ const app= express();
 
 let multer  = require('multer')
 
+require('dotenv').config()
+
+
 app.use(cors({
     credentials:true,
     origin:['http://localhost:4200']
@@ -21,7 +24,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use('/public/user_images', express.static('public/user_images'));
 
-mongoose.connect("mongodb://127.0.0.1:27017/E-Club",{
+mongoose.connect(process.env.DB,{
     useNewUrlParser:true,
     useUnifiedTopology: true
 }).then(() => {

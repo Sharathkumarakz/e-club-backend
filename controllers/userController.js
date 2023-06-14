@@ -7,6 +7,7 @@ const { ObjectId } = require('mongodb');
 const Token = require('../models/token');
 const sendEmail= require('../utils/sendEmail')
 const crypto=require('crypto')
+
 const userRegister = async (req, res, next) => {
     try {
         const { name, email, password } = req.body;
@@ -31,16 +32,6 @@ const userRegister = async (req, res, next) => {
           const userDetails=await User.findOne({email:email})
            const url=`http://localhost:4200/user/${added._id}/verify/${Ttoken.token}`
             await sendEmail(user.email,"Verify Email",url)
-     
-        // const { _id } = await added.toJSON();
-        // const token = jwt.sign({ _id: _id }, "TheSecretKey");
-        // res.cookie("jwt", token, {
-        //     httpOnly: true,
-        //     maxAge: 24 * 60 * 60 * 1000
-        // });
-        // res.json({
-        //     message: "success"
-        // });
         res.status(201).send({message:"An Email has been sent to your account please Verify"})
     } catch (error) {
         next(error);
@@ -78,10 +69,7 @@ const userLogin = async (req, res, next) => {
                 await sendEmail(user.email,"Verify Email",url)
            }
         res.status(400).send({message:"An Email has been sent to your account please Verify"})
-
         }
-
-
         const token = jwt.sign({ _id: user._id }, "TheSecretKey");
         res.cookie("jwt", token, {
             httpOnly: true,
@@ -95,7 +83,6 @@ const userLogin = async (req, res, next) => {
     }
 };
 
-
 const mailRegistration = async (req, res, next) => {
     try {
         let name = req.body.name;
@@ -103,9 +90,7 @@ const mailRegistration = async (req, res, next) => {
         let password = req.body.sub;
         let image=req.body.picture;
         const check = await User.findOne({ email: email })
-        console.log("here");
         if (check) {
-            //create jwt token
             const { _id } = await check.toJSON();
             const token = jwt.sign({ _id: _id }, "TheSecretKey")
             res.cookie("jwt", token, {
@@ -115,11 +100,9 @@ const mailRegistration = async (req, res, next) => {
             res.json({
                 message: "success"
             })
-
         } else {
             const changeP = await bcrypt.genSalt(10)
             const hashedPassword = await bcrypt.hash(password, changeP)
-
             const user = new User({
                 name: name,
                 email: email,
@@ -127,7 +110,6 @@ const mailRegistration = async (req, res, next) => {
                 password: hashedPassword
             })
             const added = await user.save();
-            //create jwt token
             const { _id } = await added.toJSON();
             const token = jwt.sign({ _id: _id }, "TheSecretKey")
             res.cookie("jwt", token, {
@@ -138,13 +120,9 @@ const mailRegistration = async (req, res, next) => {
                 message: "success"
             })
         }
-
     } catch (error) {
-
         next(error);
-
     }
-
 }
 
 const userAuth = async (req, res, next) => {
@@ -251,15 +229,9 @@ const profileUpdating = async (req, res, next) => {
 
 const verify=async(req,res,next)=>{
     try {
-        console.log("ivide");
-        console.log("id",req.params.id);
-        console.log("param",req.params.token);
-        const user=await User.findOne({ _id: req.params.id})
-        
+        const user=await User.findOne({ _id: req.params.id}) 
         if(!user)return res.status(400).send({message:'invalid Link'})
-        
         const token=await Token.findOne({userId:user._id,token:req.params.token})
-        
         if(!token)return res.status(400).send({message:'invalid Link'})
          await User.updateOne({_id:user._id},{$set:{verified:true}})
          await Token.deleteOne({token:req.params.token})
@@ -297,6 +269,5 @@ module.exports = {
     mailRegistration,
     verify,
     getClubs
-    // verified
 };
 

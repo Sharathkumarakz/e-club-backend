@@ -7,7 +7,7 @@ const Finance=require('../models/finance');
 const Notification= require('../models/notifications');
 const { ObjectId } = require('mongodb');
 const sendEmail= require('../utils/sendEmail')
-
+const sendBulk= require('../utils/bulkMail')
 const sendNotification=async (req,res,next) => {
     try {
         const club=await Club.findOne({_id:req.params.id}).populate('president').populate('secretory').populate('treasurer')
@@ -26,12 +26,12 @@ const sendNotification=async (req,res,next) => {
     await sendEmail(club.president.email, "Notification from E-club "+`${club.clubName}`, req.body.text);
     await sendEmail(club.secretory.email, "Notification from E-club "+`${club.clubName}`, req.body.text);
     await sendEmail(club.treasurer.email, "Notification from E-club "+`${club.clubName}`, req.body.text);
-    async function sendEmails() {
+      const emailAddresses = [];
         for (const member of populatedMembers.members) {
-          await sendEmail(member.email, "Notification from E-club "+`${club.clubName}`, req.body.text);
-        }
-      }
-      sendEmails();
+          emailAddresses.push(member.email);
+        }    
+// const commaSeparatedEmails = emailAddresses.join(", ");
+     await sendBulk(emailAddresses, "Notification from E-club "+`${club.clubName}`, req.body.text);
       res.status(201).send({message:"Notification send Successfully"})
      } catch (error) {
         res.status(500).send({message:'Internal Server Error'})
@@ -41,7 +41,6 @@ const sendNotification=async (req,res,next) => {
 const getNotifications=async (req, res,next) => {
     try {
         let notification=await Notification.find({clubId:req.params.id}).sort({_id:-1})
-        console.log(notification);
          res.send(notification)  
     } catch (error) {
         res.status(500).send({message:'Internal Server Error'})        

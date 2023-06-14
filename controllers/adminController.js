@@ -12,7 +12,6 @@ const { request } = require('express');
 
 
 const adminlogin= async (req, res) => {
-    console.log("ethii");
     const GettingUser = await Admin.findOne({ email:req.body.email })
     if(!GettingUser){
         return res.status(404).send({
@@ -68,9 +67,7 @@ const getClubs=async (req,res,next)=>{
 
 const getClubLeaders=async (req,res,next)=>{
     try {
-        console.log("reached");
-        const getClubLeaders = await Club.findOne({_id:req.params.id}).populate('treasurer').populate('president').populate('secretory').exec();
-   
+        const getClubLeaders = await Club.findOne({_id:req.params.id}).populate('treasurer').populate('president').populate('secretory').exec(); 
         res.send(getClubLeaders)
     } catch (err) {
         return res.status(401).send({
@@ -82,9 +79,7 @@ const getClubLeaders=async (req,res,next)=>{
 
 const getMembers=async (req,res,next)=>{
     try {
-        console.log("reached");
-        const gettingMember = await Club.findOne({_id:req.params.id}).populate('members').exec();
-        
+        const gettingMember = await Club.findOne({_id:req.params.id}).populate('members').exec(); 
         res.send(gettingMember)
     } catch (err) {
         return res.status(401).send({
@@ -96,7 +91,6 @@ const getMembers=async (req,res,next)=>{
 
 const addToBlacklist=async(req,res,next)=>{
     try {
-       console.log("rrrrrr");
         let updated= await Club.updateOne({_id:req.params.id},{$set:{isblacklisted:true}})  
         const GettingClub = await Club.find({})
         res.send(GettingClub)
@@ -122,7 +116,6 @@ const blacklisteds=async (req,res,next)=>{
 
 const removeFromBlacklist=async (req,res,next)=>{
     try {
-        console.log("getting");
         const updating = await Club.updateOne({_id:req.params.id},{$set:{isblacklisted:false}})
         const GettingClub = await Club.find({isblacklisted:true})
         res.send(GettingClub)
@@ -134,8 +127,7 @@ const removeFromBlacklist=async (req,res,next)=>{
 }
 
 const getUsers=async (req,res,next)=>{
-    try {
-        
+    try {  
         const geettingUsers = await User.find({})
         res.send(geettingUsers)
     } catch (err) {
@@ -159,7 +151,6 @@ const unblockUser=async (req,res,next)=>{
 
 const blockUser=async (req,res,next)=>{
     try {
-        console.log("Ethii");
         const update=await User.updateOne({_id:req.params.id},{$set:{isBlocked:true}})
         const geettingUsers = await User.find({})
         res.send(geettingUsers)
@@ -183,7 +174,6 @@ const logOut = async (req, res, next) => {
 
 
 module.exports = {
-
     adminlogin,
     adminIsActive,
     getClubs,

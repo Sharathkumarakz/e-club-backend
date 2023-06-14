@@ -13,8 +13,7 @@ const notificationSchema=new mongoose.Schema({
       },
       date:{
         type:Date,
-        default:Date.now(),
-        expires:3600
+        default:Date.now()
       }
 });
 

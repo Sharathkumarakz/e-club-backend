@@ -9,28 +9,22 @@ const { ObjectId } = require('mongodb');
 
 
     const updateFinance = async (req, res, next) => {
-        console.log(req.body);
         try {
             const { username,reason,date,amount,status } = req.body;
-            const check = await Club.findOne({_id:req.params.id});
-            
+            const check = await Club.findOne({_id:req.params.id}); 
             const finance = new Finance({
                 clubName:check._id,
                 name:username,
                 reason: reason,
                 amount: amount,
                 date: date,
-                status:status
-               
+                status:status      
             })
             if(status===true){
-           
               await Club.updateOne({_id:req.params.id},{$inc:{cash:amount}})
              }
             if(status===false){
-            
-               await Club.updateOne({_id:req.params.id},{$inc:{cash:-amount}})
-             
+               await Club.updateOne({_id:req.params.id},{$inc:{cash:-amount}}) 
              }
             const added = await finance.save();
             let financial=await Finance.find({clubName:req.params.id}).sort({date:1})
@@ -41,9 +35,18 @@ const { ObjectId } = require('mongodb');
     };
   
     
-    const getFinancialData=async (req,res,next)=>{
+    const getFinancialDataIncome=async (req,res,next)=>{
         try {
-         let financial=await Finance.find({clubName:req.params.id}).sort({_id:-1})
+         let financial=await Finance.find({clubName:req.params.id,status:true}).sort({_id:-1})
+         res.send(financial)
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    const getFinancialDataLoss=async (req,res,next)=>{
+        try {
+         let financial=await Finance.find({clubName:req.params.id,status:false}).sort({_id:-1})
          res.send(financial)
         } catch (error) {
             next(error);
@@ -52,5 +55,7 @@ const { ObjectId } = require('mongodb');
 
 module.exports = {
     updateFinance,
-    getFinancialData
+    getFinancialDataIncome,
+    getFinancialDataLoss,
+
   }

@@ -9,6 +9,7 @@ const { ObjectId } = require('mongodb');
 
 const makePayment=async(req,res,next)=>{
     try {
+        console.log(req.body);
         const check = await Club.findOne({_id:req.params.id});
         const finance = new Finance({
             clubName:check._id,
@@ -45,7 +46,6 @@ const getPaymentDetails=async(req,res,next)=>{
 const setStripe=async(req,res,next)=>{
     try {
      let update=await Club.updateOne({_id:req.params.id},{$set:{stripe:req.body.stripe}})
-     console.log(req.body);
      res.send({update})
     } catch (error) {
         return res.status(404).send({

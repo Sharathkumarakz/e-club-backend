@@ -71,7 +71,10 @@ uRoute.post('/club/updateCommitee/:id',clubController.updateCommitee)
 
 uRoute.post('/update/finance/:id',financeController.updateFinance)
 
-uRoute.get('/club/finance/:id',financeController.getFinancialData)
+uRoute.get('/club/financeIncome/:id',financeController.getFinancialDataIncome)
+
+uRoute.get('/club/financeLoss/:id',financeController.getFinancialDataLoss)
+
 
 uRoute.post('/club/addEvent/:id',eventsController.addEvent)
 

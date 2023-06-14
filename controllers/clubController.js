@@ -12,7 +12,6 @@ const { logOut } = require("./userController");
 
 const clubRegister = async (req, res, next) => {
   try {
-    console.log(req.body);
     let clubName = req.body.clubName;
     let registerNo = req.body.registerNo;
     let place = req.body.place;
@@ -21,7 +20,6 @@ const clubRegister = async (req, res, next) => {
     let secretory = req.body.secretory
     let treasurer = req.body.treasurer
     const check = await Club.findOne({ clubName: clubName })
-    console.log("here");
     if (check) {
       return res.status(400).send({
         message: "This club name is not available"
@@ -58,7 +56,6 @@ const clubRegister = async (req, res, next) => {
           message: "You get a president role, so you cant be a treasurer or secretory!"
         })
       }
-      console.log(treasurerActive);
       const changeP = await bcrypt.genSalt(10)
       const hashedcode = await bcrypt.hash(securityCode, changeP)
       const club = new Club({
@@ -87,7 +84,6 @@ const clubRegister = async (req, res, next) => {
 let joinClub = async (req, res, next) => {
   try {
     let found = await Club.findOne({ clubName: req.body.clubName });
-    console.log(req.body.category);
     if(found.category!=req.body.category){
       return res.status(404).send({
         message: "Category failed to match"
@@ -148,7 +144,6 @@ let joinClub2 = async (req, res, next) => {
       if (!(await bcrypt.compare(req.body.securityCode, found.securityCode))) {
         const cookie = req.cookies['jwt']
         const claims = jwt.verify(cookie, "TheSecretKey")
-
         if (!claims) {
           return res.status(401).send({
             message: "UnAuthenticated"
@@ -172,6 +167,10 @@ let joinClub2 = async (req, res, next) => {
         if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString()||found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
           return res.json({ authenticated: true, id: found._id });
         } else {
+          const result = await User.updateOne(
+            { _id:claims._id },
+            { $pull: { clubs: { clubName:req.body.clubName } } }
+          );
           return res.json({ notAllowed: true })
         }
       }
@@ -203,12 +202,10 @@ const clubData = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-
 }
 
 
 const profilePictureUpdate = async (req, res, next) => {
-
   images = req.file.filename
   try {
     const updated = await Club.updateOne({ _id: req.params.id }, { $set: { image: images } })
@@ -225,20 +222,15 @@ const addPost = async (req, res, next) => {
 
   images = req.file.filename
   try {
-    console.log(images);
     const { textFieldName } = req.body;
     const user = JSON.parse(textFieldName);
-    console.log(user.caption);
     let club = await Club.findOne({ _id: req.params.id })
-    console.log(club);
-
     const post = new Post({
       clubName: club._id,
       caption: user.caption,
       image: images
     })
     const added = await post.save();
- 
     res.send(added)
   } catch (err) {
     return res.status(401).send({
@@ -274,9 +266,7 @@ const deletePost = async (req, res, next) => {
 
 const userRole = async (req, res, next) => {
   try {
-
     let found = await Club.findOne({ _id: req.params.id });
-
     if (found) {
       const cookie = req.cookies['jwt'];
       const claims = jwt.verify(cookie, "TheSecretKey");
@@ -285,16 +275,15 @@ const userRole = async (req, res, next) => {
           message: "UnAuthenticated"
         });
       }
-
       if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString()||found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
         return res.json({ authenticated: true, id: found._id });
+        // return true
       } else {
-        console.log("eeeelse");
         return res.json({ notAllowed: true })
+        // return false;
       }
     }
   } catch (error) {
-    console.log("yes");
     return res.status(401).send({
       welcome: "UnAuthenticated"
     });
@@ -370,10 +359,8 @@ const getMemberstest = async (req, res, next) => {
 
 const deleteMembers = async (req, res, next) => {
   try {
-    console.log(req.body.club,req.body.user );
     let user=await User.findOne({email:req.body.user})
     let adding = await Club.updateOne({ _id: req.body.club }, { $pull: { members:user._id } })
-    console.log(adding, "nnnnnnnnnnnnnnnnnnnnnnnnn");
     const club = await Club.findById(req.body.club).populate('members').exec();
     res.send(club);
   } catch (error) {
@@ -390,10 +377,7 @@ const editClubProfile = async (req, res, next) => {
     const club = await Club.findOne({ _id: req.params.id })
     const clubnameFound = await Club.findOne({ clubName: req.body.clubName })
     if (clubnameFound) {
-      
-      console.log(req.body);
       if (req.body.clubName === clubnameFound.clubName && clubnameFound.secretory.toString() === club.secretory.toString() && club.president.toString() === clubnameFound.president.toString() && clubnameFound.registerNo === club.registerNo) {
-        console.log("nothinggg");
         let update = await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, address:req.body.place, category: req.body.category, registerNo: req.body.regiterNo ,} })
       } else {
         return res.status(401).send({
@@ -403,12 +387,9 @@ const editClubProfile = async (req, res, next) => {
     } else {
       let update = await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, address:req.body.place, category: req.body.category, registerNo: req.body.regiterNo } })
     }
-
     const gettingClub = await Club.findOne({ _id: req.params.id })
     const { password, ...data } = await gettingClub.toJSON()
-
     res.send(data)
-
   } catch (error) {
     return res.status(401).send({
       message: "Unauthenticated"
@@ -418,16 +399,13 @@ const editClubProfile = async (req, res, next) => {
 
 const updateSecurityCode = async (req, res, next) => {
   try {
-
     let found = await Club.findOne({ _id: req.params.id });
     if (found) {
-
       if (!(await bcrypt.compare(req.body.securityOld, found.securityCode))) {
         return res.status(404).send({
           message: "secretCode is Incorrect"
         })
       } else {
-        console.log(req.params.id);
         const changeP = await bcrypt.genSalt(10)
         const hashedcode = await bcrypt.hash(req.body.securityNew, changeP)
         let update = await Club.updateOne({ _id: req.params.id }, { $set: { securityCode: hashedcode } })
@@ -461,7 +439,6 @@ const updateCommitee = async (req, res, next) => {
         message: "there is no such person for being Treasurer"
       });
     }
-    console.log("here");
     let update = await Club.updateOne({ _id: req.params.id }, { $set: { president: president._id, secretory: secretory._id, treasurer: treasurer._id } })
     res.send(update)
   } catch (error) {
@@ -472,7 +449,6 @@ const updateCommitee = async (req, res, next) => {
 }
 
 module.exports = {
-
   clubRegister,
   joinClub,
   clubData,

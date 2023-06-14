@@ -12,8 +12,7 @@ const { request } = require('express');
 
 
 const addEvent=async (req,res,next)=>{
-    try {
-    
+    try { 
       const cookie = req.cookies['jwt'];
       const claims = jwt.verify(cookie, "TheSecretKey");
        let clubData=await Club.findOne({_id:req.params.id})
@@ -35,7 +34,6 @@ const addEvent=async (req,res,next)=>{
       const added = await event.save();
       res.send(added);
        }
-  
     } catch (error) {
       return res.status(401).send({
         message: "Unauthenticated"
@@ -56,8 +54,6 @@ const addEvent=async (req,res,next)=>{
 
   const deleteEvent=async (req,res,next)=>{
     try {
-        console.log(req.body);
-        console.log(req.params.id);
       let updated=await Event.deleteOne({_id:req.body.id})
       res.send(updated);
     } catch (updated) {

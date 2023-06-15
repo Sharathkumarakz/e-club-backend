@@ -16,6 +16,8 @@ const sendNotification=async (req,res,next) => {
             message:req.body.text
         })
         const added = await notification.save();
+        console.log(added);
+
         const populatedMembers = await Club.findById(req.params.id)
     .populate({
       path: 'members',

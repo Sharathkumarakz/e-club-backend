@@ -17,6 +17,9 @@ const financeController=require("../controllers/financeController")
 const eventsController=require("../controllers/eventController")
 const paymentController=require("../controllers/paymentController")
 const notificationController=require("../controllers/notificationsController")
+const chatController=require("../controllers/chatController")
+
+
 uRoute.post('/register',userController.userRegister)
 
 
@@ -96,6 +99,19 @@ uRoute.get('/user/payment/:id',paymentController.getPaymentDetails)
 uRoute.post('/club/notifications/:id',notificationController.sendNotification)
 
 uRoute.get('/club/getNotifications/:id',notificationController.getNotifications)
+
+uRoute.post('/club/chat/:id',chatController.storeChat)
+
+uRoute.get('/club/chat/:id',chatController.getChat)
+
+uRoute.post('/club/chatJoin/:id',chatController.joiningToChat)
+
+uRoute.get('/club/chatJoin/:id',chatController.joinedData)
+
+uRoute.get('/club/chatJoin/:id',chatController.joinedData)
+
+uRoute.post('/club/leaveChat/:id',chatController.leaveChat)
+
 
 
 module.exports = uRoute;

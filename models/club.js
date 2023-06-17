@@ -64,6 +64,8 @@ const clubSchema=new mongoose.Schema({
       isblacklisted: {
         type:Boolean,
         default:false    
+      },activeUsers:{
+        type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]        
       }
 });
 

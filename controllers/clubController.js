@@ -195,7 +195,7 @@ const clubData = async (req, res, next) => {
       })
     }
     let userdata=await User.findOne({_id:claims._id})
-    const  gettingClub= await Club.findOne({ _id: req.params.id }).populate('president').populate('secretory').populate('treasurer')
+    const  gettingClub= await Club.findOne({ _id: req.params.id }).populate('president').populate('secretory').populate('treasurer').populate('activeUsers')
      let data=gettingClub 
      let user={id:userdata._id}
     res.send({data: data,user:user})

@@ -66,6 +66,10 @@ const clubSchema=new mongoose.Schema({
         default:false    
       },activeUsers:{
         type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]        
+      },
+      conference:{
+        type:String,
+        default:null 
       }
 });
 

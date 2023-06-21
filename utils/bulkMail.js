@@ -1,5 +1,8 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config()
+
+
+//SENDING BULK MAIL TO ALL CLUB MEMBERS BY ITS LEADERS
 module.exports= async(email,subject,text)=>{
    try {
      const transport=nodemailer.createTransport({
@@ -12,7 +15,6 @@ module.exports= async(email,subject,text)=>{
             pass:process.env.PASS
         }
      })
-
      await transport.sendMail({
         from: process.env.USER,
         to: null,

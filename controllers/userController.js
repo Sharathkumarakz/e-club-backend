@@ -8,6 +8,8 @@ const Token = require('../models/token');
 const sendEmail= require('../utils/sendEmail')
 const crypto=require('crypto')
 
+
+//USER REGISTRATION
 const userRegister = async (req, res, next) => {
     try {
         const { name, email, password } = req.body;
@@ -38,8 +40,34 @@ const userRegister = async (req, res, next) => {
     }
 };
 
+
+//USER LOGIN
 const userLogin = async (req, res, next) => {
     try {
+        if(req.body.userId){
+            const {userId, password,tokenId}=req.body
+            const user = await User.findOne({_id:userId });
+                    if (!user) {
+                        return res.status(404).send({
+                            message: "User not found"
+                        });
+                    } const hashedPassword = await bcrypt.hash(password, 10);
+                      let updated=  await User.updateOne({_id:userId},{$set:{verified:true,password:hashedPassword}})
+                      await Token.deleteOne({token:tokenId})
+                      if (!updated) {
+                        return res.status(404).send({
+                            message: "User not found"
+                        });
+                    }
+                    const token = jwt.sign({ _id: user._id }, "TheSecretKey");
+                    res.cookie("jwt", token, {
+                        httpOnly: true,
+                        maxAge: 24 * 60 * 60 * 1000
+                    });
+                    res.json({
+                        message: "success"
+                    });
+        }else{
         const { email, password } = req.body;
         const user = await User.findOne({ email: email });
         if (!user) {
@@ -78,11 +106,13 @@ const userLogin = async (req, res, next) => {
         res.json({
             message: "success"
         });
+    }
     } catch (error) {
         next(error);
     }
 };
 
+//SOCIAL LOGIN REGISTRATION AND LOGIN
 const mailRegistration = async (req, res, next) => {
     try {
         let name = req.body.name;
@@ -125,6 +155,8 @@ const mailRegistration = async (req, res, next) => {
     }
 }
 
+
+//TO AUTHENTICATE A USER IS ACTIVE OR NOT
 const userAuth = async (req, res, next) => {
     try {
         const cookie = req.cookies['jwt'];
@@ -149,17 +181,8 @@ const userAuth = async (req, res, next) => {
     }
 };
 
-const logOut = async (req, res, next) => {
-    try {
-        res.cookie("jwt", "", {
-            maxAge: 0
-        });
-        res.send({ message: "success" });
-    } catch (error) {
-        next(error);
-    }
-};
 
+//VIEW PROFILE OF A USER
 const viewProfile = async (req, res, next) => {
     try {
         const cookie = req.cookies['jwt'];
@@ -179,6 +202,8 @@ const viewProfile = async (req, res, next) => {
     }
 };
 
+
+//USER PROFILE PICTURE UPDATION
 const profilePictureUpdate = async (req, res, next) => {
     try {
         const cookie = req.cookies['jwt'];
@@ -200,6 +225,7 @@ const profilePictureUpdate = async (req, res, next) => {
     }
 };
 
+//USER PROFILE UDATING 
 const profileUpdating = async (req, res, next) => {
     try {
         const { name, address, about, phone } = req.body;
@@ -226,7 +252,7 @@ const profileUpdating = async (req, res, next) => {
     }
 };
 
-
+//SOCIAL LOGIN VERIFICATION THROUGH EMAIL
 const verify=async(req,res,next)=>{
     try {
         const user=await User.findOne({ _id: req.params.id}) 
@@ -241,6 +267,7 @@ const verify=async(req,res,next)=>{
     }
 }
 
+// GET CLUBS OF A SPECIFIED USER
 const getClubs= async (req, res) => {
     try {
         const cookie = req.cookies['jwt'];
@@ -258,6 +285,54 @@ const getClubs= async (req, res) => {
         res.status(500).send({message:'Internal Server Error'})
     }
 }
+
+
+//USER CHANGE PASSWORD
+const changePassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email: email });
+        if (!user) {
+            return res.status(404).send({
+                message: "User not found"
+            });
+        }  
+        if(user.isBlocked===true){
+            return res.status(404).send({
+                message: "You are blocked"
+            });  
+        }
+           let token=await Token.findOne({userId:user._id}) 
+           if(!token){    
+            const Ttoken= await new Token({
+                userId:user._id,
+                token:crypto.randomBytes(32).toString("hex")
+              }).save();
+               const url=`http://localhost:4200/user/${user._id}/changePassword/${Ttoken.token}`
+                await sendEmail(user.email,"E-club Change Password",url)
+           }
+        res.status(400).send({message:"An Email has been sent to your account "})
+        }
+  catch (err) {
+    return res.status(404).send({
+        message: "Authentication error"
+    });
+  }
+};
+
+//USER LOGOUT
+const logOut = async (req, res, next) => {
+    try {
+        res.cookie("jwt", "", {
+            maxAge: 0
+        });
+        res.send({ message: "success" });
+    } catch (error) {
+        next(error);
+    }
+};
+
+
 module.exports = {
     userRegister,
     userLogin,
@@ -268,6 +343,8 @@ module.exports = {
     profileUpdating,
     mailRegistration,
     verify,
-    getClubs
+    getClubs,
+    changePassword,
+   
 };
 

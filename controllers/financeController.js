@@ -8,6 +8,7 @@ const upload = require('../middlewares/multer');
 const { ObjectId } = require('mongodb');
 
 
+//ADD FINACIAL DATAS
     const updateFinance = async (req, res, next) => {
         try {
             const { username,reason,date,amount,status } = req.body;
@@ -35,6 +36,8 @@ const { ObjectId } = require('mongodb');
     };
   
     
+
+    //GET FINANCIAL DATAS(INCOME)
     const getFinancialDataIncome=async (req,res,next)=>{
         try {
          let financial=await Finance.find({clubName:req.params.id,status:true}).sort({_id:-1})
@@ -44,6 +47,7 @@ const { ObjectId } = require('mongodb');
         }
     }
 
+    //GET FINANCIAL DATAS(LOSS)
     const getFinancialDataLoss=async (req,res,next)=>{
         try {
          let financial=await Finance.find({clubName:req.params.id,status:false}).sort({_id:-1})

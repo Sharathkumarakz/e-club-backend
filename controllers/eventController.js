@@ -10,7 +10,7 @@ const { ObjectId } = require('mongodb');
 const { request } = require('express');
 
 
-
+//TO ADD AN EVENT
 const addEvent=async (req,res,next)=>{
     try { 
       const cookie = req.cookies['jwt'];
@@ -41,6 +41,8 @@ const addEvent=async (req,res,next)=>{
     }
   }
   
+
+  // TO GET EVENTS OF A SPECIFIED CLUB
   const getEvents=async (req,res,next)=>{
     try {
       let events=await Event.find({clubName:req.params.id}).sort({date:-1})
@@ -52,6 +54,7 @@ const addEvent=async (req,res,next)=>{
     }
   }
 
+  //DELETE A SPECIFIED EVENT
   const deleteEvent=async (req,res,next)=>{
     try {
       let updated=await Event.deleteOne({_id:req.body.id})

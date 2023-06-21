@@ -86,6 +86,9 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const app = express();
 const http = require('http').createServer(app);
+
+
+//SOCKET
 const io = require('socket.io')(http, {
   cors: {
     origin: 'http://localhost:4200',
@@ -95,6 +98,8 @@ const io = require('socket.io')(http, {
   }
 });
 
+
+//CORS
 app.use(cors({
   credentials: true,
   origin: ['http://localhost:4200']
@@ -103,7 +108,8 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json());
 app.use('/public/user_images', express.static('public/user_images'));
-//----------------------------------------
+
+//SOCKETS USE
 io.on('connection', (socket) => {
   console.log('Some user is connected');
 
@@ -122,16 +128,21 @@ io.on('connection', (socket) => {
     socket.on('message',function(data){
      io.in(data.room).emit('newMessage',{user:data.user,message:data.message,time:Date.now()})
     })
-});
+   }
+);
 
+//USER ROUTE
 const userRoute = require('./routes/userRoute');
 app.use("/", userRoute);
 
+//ADMIN ROUTE
 const adminRoute = require('./routes/adminRoute');
 app.use("/admin", adminRoute);
 
+//PORT LISTENING
 const PORT = process.env.PORT || 5000;
 
+//MONGOS, SOCKET CONNECTION
 mongoose.connect(process.env.DB, {
   useNewUrlParser: true,
   useUnifiedTopology: true

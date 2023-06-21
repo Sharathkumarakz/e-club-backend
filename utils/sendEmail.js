@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config()
+
+//SENDING EMAILS
 module.exports= async(email,subject,text)=>{
    try {
      const transport=nodemailer.createTransport({

@@ -1,11 +1,6 @@
-const express = require("express");
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+
 const Club = require('../models/club');
-const Finance=require('../models/finance');
 const Notification= require('../models/notifications');
-const { ObjectId } = require('mongodb');
 const sendEmail= require('../utils/sendEmail')
 const sendBulk= require('../utils/bulkMail')
 

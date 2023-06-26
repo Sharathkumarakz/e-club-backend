@@ -1,12 +1,6 @@
-const express = require("express");
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+
 const Club = require('../models/club');
 const Chat = require('../models/chat');
-const upload = require('../middlewares/multer')
-const { ObjectId } = require('mongodb');
-const { request } = require('express');
 
 
 //TO STORE CHAT DATA
@@ -15,7 +9,8 @@ const storeChat = async (req, res, next) => {
         const chat = new Chat({
             user: req.body.user,
             room: req.body.room,
-            message: req.body.message
+            message: req.body.message,
+            time:Date.now()
         })
         const added = await chat.save();
         res.send(added)

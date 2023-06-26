@@ -18,6 +18,10 @@ const userSchema=new mongoose.Schema({
     type:String,
     default:null
   },
+  imagePublicId:{
+    type:String,
+    default:null
+  },
   address:{
     type:String,
     default:null

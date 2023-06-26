@@ -1,14 +1,11 @@
-const express = require("express");
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Club = require('../models/club');
 const Post = require('../models/post');
-const Event = require('../models/events');
-const upload = require('../middlewares/multer')
-const { ObjectId } = require('mongodb');
-const { request } = require('express');
-const { logOut } = require("./userController");
+
+const{uploadToCloudinary,removeFromCloudinary} =require('../middlewares/cloudinary')
 
 
 
@@ -84,11 +81,7 @@ const clubRegister = async (req, res, next) => {
 let joinClub = async (req, res, next) => {
   try {
     let found = await Club.findOne({ clubName: req.body.clubName });
-    if (found.category != req.body.category) {
-      return res.status(404).send({
-        message: "Category failed to match"
-      })
-    }
+
     if (found) {
       if (!(await bcrypt.compare(req.body.securityCode, found.securityCode))) {
         return res.status(404).send({
@@ -122,7 +115,7 @@ let joinClub = async (req, res, next) => {
         } else {
           return res.json({ notAllowed: true })
         }
-      }
+      } 
     } else {
       return res.status(404).send({
         message: "There is no such club"
@@ -201,11 +194,28 @@ const clubData = async (req, res, next) => {
   }
 }
 
+
+
+const clubDetails = async (req, res, next) => {
+  try {
+    const gettingClub = await Club.findOne({ _id: req.params.id }).populate('president').populate('secretory').populate('treasurer').populate('activeUsers')
+    let data = gettingClub
+    res.send({ data: data })
+  } catch (error) {
+    next(error);
+  }
+}
+
 //TO UPDATE PROFILE PICTUE OF A CLUB
 const profilePictureUpdate = async (req, res, next) => {
-  images = req.file.filename
   try {
-    const updated = await Club.updateOne({ _id: req.params.id }, { $set: { image: images } })
+    const file = req.files.image;
+    const clubdetails = await Club.findOne({ _id:req.params.id});
+        if(clubdetails.imagePublicId){
+      await removeFromCloudinary(clubdetails.imagePublicId)
+        }
+    const image=await uploadToCloudinary(file.tempFilePath,"clubs-profile-pictures")
+    const updated = await Club.updateOne({ _id: req.params.id }, { $set: { image:image.url,imagePublicId:image.public_id } })
     res.send(updated)
   } catch (err) {
     return res.status(401).send({
@@ -217,15 +227,17 @@ const profilePictureUpdate = async (req, res, next) => {
 
 //TO ADD A POST OF CLUB
 const addPost = async (req, res, next) => {
-  images = req.file.filename
   try {
     const { textFieldName } = req.body;
     const user = JSON.parse(textFieldName);
+    const file = req.files.image;
+    const image=await uploadToCloudinary(file.tempFilePath,"clubs-post-pictures")
     let club = await Club.findOne({ _id: req.params.id })
     const post = new Post({
       clubName: club._id,
       caption: user.caption,
-      image: images
+      image: image.url,
+      imagePublicId:image.public_id 
     })
     const added = await post.save();
     res.send(added)
@@ -251,7 +263,12 @@ const getPosts = async (req, res, next) => {
 //TO DELETE A SPECIFIED POST
 const deletePost = async (req, res, next) => {
   try {
-    const deleting = await Post.deleteOne({ _id: req.params.id })
+
+    const postDetails = await Post.findOne({ _id: req.params.id })
+    if(postDetails.imagePublicId){
+      await removeFromCloudinary(postDetails.imagePublicId)
+        }
+    let deleting=await Post.deleteOne({ _id: req.params.id })
     res.send(deleting)
   } catch (error) {
     return res.status(401).send({
@@ -450,8 +467,20 @@ const updateCommitee = async (req, res, next) => {
 //TO GET ALL CLUBSLIST
 const getAllClubs = async (req, res, next) => {
   try {
-    let data = await Club.find({})
-    res.send(data);
+    const regex = new RegExp(req.body.name, 'i');
+    if (req.body.name.trim().length === 0) {
+      return res.status(401).send({
+        message: "Clubs detail error"
+      });
+    }
+    const clubs = await Club.find({ clubName: regex });
+    if(clubs){
+      res.send(clubs);
+    }else{
+      return res.status(401).send({
+        message: "Clubs detail error"
+      });
+    }
   } catch (error) {
     return res.status(401).send({
       message: "Clubs detail error"
@@ -476,5 +505,6 @@ module.exports = {
   updateCommitee,
   joinClub2,
   getMembers,
+  clubDetails,
   getAllClubs
 }

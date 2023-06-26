@@ -13,6 +13,10 @@ const postSchema=new mongoose.Schema({
       caption:{
         type:String,
         default:null
+      },
+      imagePublicId:{
+        type:String,
+        default:null
       }
 });
 

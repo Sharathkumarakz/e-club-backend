@@ -1,13 +1,8 @@
-const express = require("express");
-const bcrypt = require('bcryptjs');
+
 const jwt = require('jsonwebtoken');
-const User = require('../models/user');
 const Club = require('../models/club');
-const Post = require('../models/post');
 const Event = require('../models/events');
-const upload = require('../middlewares/multer')
-const { ObjectId } = require('mongodb');
-const { request } = require('express');
+
 
 
 //TO ADD AN EVENT

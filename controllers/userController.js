@@ -1,13 +1,11 @@
-const express = require("express");
+
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
-const upload = require('../middlewares/multer');
-const { ObjectId } = require('mongodb');
 const Token = require('../models/token');
 const sendEmail= require('../utils/sendEmail')
 const crypto=require('crypto')
-
+const{uploadToCloudinary,removeFromCloudinary} =require('../middlewares/cloudinary')
 
 //USER REGISTRATION
 const userRegister = async (req, res, next) => {
@@ -206,6 +204,7 @@ const viewProfile = async (req, res, next) => {
 //USER PROFILE PICTURE UPDATION
 const profilePictureUpdate = async (req, res, next) => {
     try {
+   
         const cookie = req.cookies['jwt'];
         const claims = jwt.verify(cookie, "TheSecretKey");
         if (!claims) {
@@ -213,9 +212,18 @@ const profilePictureUpdate = async (req, res, next) => {
                 message: "Unauthenticated"
             });
         }
-        const images = req.file.filename;
-        await User.updateOne({ _id: claims._id }, { $set: { image: images } });
-        const user = await User.findOne({ _id: claims._id });
+     
+        const file = req.files.image;
+  const userdetails = await User.findOne({ _id: claims._id });
+      if(userdetails.imagePublicId){
+    await removeFromCloudinary(userdetails.imagePublicId)
+      }
+  
+        const image=await uploadToCloudinary(file.tempFilePath,"users-profile-pictures")
+   
+        await User.updateOne({ _id: claims._id }, { $set: { image: image.url,imagePublicId:image.public_id} });
+    
+          const user = await User.findOne({ _id: claims._id });
         const { password, ...data } = await user.toJSON();
         res.send(data);
     } catch (err) {

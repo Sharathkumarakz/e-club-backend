@@ -1,13 +1,10 @@
-const express = require("express");
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
+
 const Club = require('../models/club');
 const Finance=require('../models/finance');
-const { ObjectId } = require('mongodb');
 
 //TO MAKE PAYMENT WIH STRIPE
 const makePayment=async(req,res,next)=>{
+    console.log("yaaaaaaaaaaaaaaaaaaaaaaaaa");
     try {
         const check = await Club.findOne({_id:req.params.id});
         const finance = new Finance({

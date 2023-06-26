@@ -1,9 +1,7 @@
 const express = require("express");
 const uRoute = express();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
-const upload=require('../middlewares/multer')
+
+
 
 
 //CONTROLLERS
@@ -26,7 +24,7 @@ uRoute.get('/user',userController.userAuth)
 
 //USER PROFILE RELATED
 uRoute.get('/profile',userController.viewProfile)
-uRoute.post('/profile-upload-single',upload.single('image'),userController.profilePictureUpdate)
+ uRoute.post('/profile-upload-single',userController.profilePictureUpdate)
 uRoute.post('/update/profile',userController.profileUpdating)
 
 
@@ -37,8 +35,9 @@ uRoute.post('/profile/join/club',clubController.joinClub2)
 
 //USER CLUB DETAILS
 uRoute.get('/club/:id',clubController.clubData)
-uRoute.post('/club/pictureUpdate/:id',upload.single('image'),clubController.profilePictureUpdate)
-uRoute.post('/club/addPost/:id',upload.single('image'),clubController.addPost)
+uRoute.get('/clubdetails/:id',clubController.clubDetails)
+uRoute.post('/club/pictureUpdate/:id',clubController.profilePictureUpdate)
+uRoute.post('/club/addPost/:id',clubController.addPost)
 uRoute.get('/club/posts/:id',clubController.getPosts)
 uRoute.post('/club/deletePost/:id',clubController.deletePost)
 uRoute.get('/club/roleAuthentication/:id',clubController.userRole)
@@ -86,7 +85,7 @@ uRoute.post('/club/conference/:id',chatController.conferenceSeting)
 uRoute.get('/club/conference/:id',chatController.updateConference)
 
 //USER GET ALL CLUBS FOR SEARCH
-uRoute.get('/clubs',clubController.getAllClubs)
+uRoute.post('/clubs',clubController.getAllClubs)
 
 //USER LOGOUT
 uRoute.post('/logout',userController.logOut)

@@ -56,6 +56,9 @@ const clubSchema=new mongoose.Schema({
       cash:{
         type:Number,
         default:0
+      },imagePublicId:{
+        type:String,
+        default:null
       },
       loss:{
         type:Number,

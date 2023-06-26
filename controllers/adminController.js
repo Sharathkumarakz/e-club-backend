@@ -1,15 +1,10 @@
-const express = require("express");
-const bcrypt = require('bcryptjs');
+
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Club = require('../models/club');
-const Post = require('../models/post');
-const Event = require('../models/events');
 const Admin = require('../models/admin');
-const upload = require('../middlewares/multer')
-const { ObjectId } = require('mongodb');
-const { request } = require('express');
-
+const Banner=require('../models/banner')
+const{uploadToCloudinary,removeFromCloudinary} =require('../middlewares/cloudinary')
 
 
 //ADMIN LOGIN
@@ -36,7 +31,7 @@ const adminlogin = async (req, res) => {
 }
 
 
-//TO CHECK ADMIN ACTIVE OR NOR
+//TO CHECK ADMIN ACTIVE OR NOT
 const adminIsActive = async (req, res, next) => {
     try {
         const cookie = req.cookies['jwtAdmin']
@@ -73,6 +68,11 @@ const getClubs = async (req, res, next) => {
 //TO GET LEADERS OF A CLUB 
 const getClubLeaders = async (req, res, next) => {
     try {
+        if(!req.params.id){
+            return res.status(401).send({
+                welcome: "Params required"
+            }) 
+        }
         const getClubLeaders = await Club.findOne({ _id: req.params.id }).populate('treasurer').populate('president').populate('secretory').exec();
         res.send(getClubLeaders)
     } catch (err) {
@@ -98,7 +98,7 @@ const getMembers = async (req, res, next) => {
 //TO ADD CLUB TO BLACKLIST
 const addToBlacklist = async (req, res, next) => {
     try {
-        let updated = await Club.updateOne({ _id: req.params.id }, { $set: { isblacklisted: true } })
+        await Club.updateOne({ _id: req.params.id }, { $set: { isblacklisted: true } })
         const GettingClub = await Club.find({})
         res.send(GettingClub)
     } catch (error) {
@@ -111,8 +111,8 @@ const addToBlacklist = async (req, res, next) => {
 //TO GET ALL BLACKLISTED CLUBS
 const blacklisteds = async (req, res, next) => {
     try {
-        const GettingClub = await Club.find({ isblacklisted: true })
-        res.send(GettingClub)
+        const blacklistedClubs = await Club.find({ isblacklisted: true })
+        res.send(blacklistedClubs)
     } catch (err) {
         return res.status(401).send({
             welcome: "UnAuthenticated"
@@ -123,9 +123,9 @@ const blacklisteds = async (req, res, next) => {
 //TO REMOVE CLUBS FROM BLACK LIST
 const removeFromBlacklist = async (req, res, next) => {
     try {
-        const updating = await Club.updateOne({ _id: req.params.id }, { $set: { isblacklisted: false } })
-        const GettingClub = await Club.find({ isblacklisted: true })
-        res.send(GettingClub)
+        await Club.updateOne({ _id: req.params.id }, { $set: { isblacklisted: false } })
+        const blacklistedClubs = await Club.find({ isblacklisted: true })
+        res.send(blacklistedClubs)
     } catch (err) {
         return res.status(401).send({
             welcome: "UnAuthenticated"
@@ -136,8 +136,8 @@ const removeFromBlacklist = async (req, res, next) => {
 //TO GET ALL USERS OF E-CLUB
 const getUsers = async (req, res, next) => {
     try {
-        const geettingUsers = await User.find({})
-        res.send(geettingUsers)
+        const allUsers = await User.find({})
+        res.send(allUsers)
     } catch (err) {
         return res.status(401).send({
             welcome: "UnAuthenticated"
@@ -148,9 +148,35 @@ const getUsers = async (req, res, next) => {
 //TO BLOCK A SPECIFIED USER
 const blockUser = async (req, res, next) => {
     try {
-        const update = await User.updateOne({ _id: req.params.id }, { $set: { isBlocked: true } })
+        await User.updateOne({ _id: req.params.id }, { $set: { isBlocked: true } })
+        const allUsers = await User.find({})
+        res.send(allUsers)
+    } catch (err) {
+        return res.status(401).send({
+            welcome: "block user error"
+        })
+    }
+}
+
+//TO UNBLOCK A SPECIFIED USER
+const unblockUser = async (req, res, next) => {
+    try {
+        await User.updateOne({ _id: req.params.id }, { $set: { isBlocked: false } })
         const geettingUsers = await User.find({})
         res.send(geettingUsers)
+    } catch (err) {
+        return res.status(401).send({
+            welcome: "un block user error"
+        })
+    }
+}
+
+//GET DETAILS OF A SPECIFIED CLUB
+const clubDetails = async (req, res, next) => {
+    try {
+        const gettingClub = await Club.findOne({ _id: req.params.id }).populate('president').populate('secretory').populate('treasurer').populate('activeUsers')
+        let data = gettingClub
+        res.send({ data: data })
     } catch (err) {
         return res.status(401).send({
             welcome: "UnAuthenticated"
@@ -158,18 +184,80 @@ const blockUser = async (req, res, next) => {
     }
 }
 
-//TO UNLOCK A SPECIFIED USER
-const unblockUser = async (req, res, next) => {
+//ADD BANNER
+const addBanner=async (req, res) => {
     try {
-        const update = await User.updateOne({ _id: req.params.id }, { $set: { isBlocked: false } })
-        const geettingUsers = await User.find({})
-        res.send(geettingUsers)
-    } catch (err) {
+          let file=req.files.image
+          if(file){
+            const image=await uploadToCloudinary(file.tempFilePath,"banner-pictures")
+   
+               let banner=new Banner({
+            image: image.url,
+            imageId:image.public_id,
+            about:req.body.bannerText
+        })
+        let bannerAdded=banner.save()
+        res.send(bannerAdded)
+          }else{
+            return res.status(401).send({
+                welcome: "Error with image uloading"
+            })
+          }
+    
+    } catch (error) {
         return res.status(401).send({
             welcome: "UnAuthenticated"
         })
     }
 }
+
+//GET ALL BANNER
+const getBanners=async (req,res,next)=>{
+    try {
+        let banners=await Banner.find({})
+        res.send(banners)
+    } catch (error) {
+        return res.status(401).send({
+            welcome: "get banner error"
+        })   
+    }
+}
+
+//DELETE BANNER
+const deleteBanner=async (req,res,next)=>{
+    try {
+        console.log("haaa");
+        console.log(req.body);
+        await removeFromCloudinary(req.body.id)
+        await Banner.deleteOne({imageId:req.body.id})
+        let banners=await Banner.find({})
+        console.log("okayyyyy");
+        res.send(banners)
+
+    } catch (error) {
+        return res.status(401).send({
+            welcome: "get banner error"
+        })   
+    }
+}
+
+//GET DASHBOARD DETAILS(USER COUNT,CLUB COUNT)
+const getDashboard=async (req,res,next)=>{
+    try {
+        let users=await User.find({}).count()
+        let clubs=await Club.find({}).count()
+        let data={
+            clubs:clubs,
+            users:users
+        }
+        res.send(data)
+    } catch (error) {
+        return res.status(401).send({
+            welcome: "get banner error"
+        })   
+    }
+}
+
 
 //ADMIN LOGOUT
 const logOut = async (req, res, next) => {
@@ -184,18 +272,6 @@ const logOut = async (req, res, next) => {
 };
 
 
-const clubDetails = async (req, res, next) => {
-    try {
-        const gettingClub = await Club.findOne({ _id: req.params.id }).populate('president').populate('secretory').populate('treasurer').populate('activeUsers')
-        let data = gettingClub
-        res.send({ data: data })
-    } catch (err) {
-        return res.status(401).send({
-            welcome: "UnAuthenticated"
-        })
-    }
-}
-
 module.exports = {
     adminlogin,
     adminIsActive,
@@ -209,5 +285,9 @@ module.exports = {
     clubDetails,
     blockUser,
     unblockUser,
+    addBanner,
+    getBanners,
+    deleteBanner,
+    getDashboard,
     logOut
 }

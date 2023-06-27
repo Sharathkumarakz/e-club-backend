@@ -12,8 +12,8 @@ const storeChat = async (req, res, next) => {
             message: req.body.message,
             time:Date.now()
         })
-        const added = await chat.save();
-        res.send(added)
+        const chatAdded = await chat.save();
+        res.send(chatAdded)
     } catch (error) {
         res.status(500).send({ message: 'Internal Server Error' })
     }
@@ -22,9 +22,9 @@ const storeChat = async (req, res, next) => {
 
 //TO GET CHAT OF A SPECIFIED CLUB
 const getChat = async (req, res, next) => {
-    try {
-        let messages = await Chat.find({ room: req.params.id }).sort({ date: 1 }).populate('user')
-        res.send(messages)
+    try {  
+        let getAllChat = await Chat.find({ room: req.params.id }).sort({ date: 1 }).populate('user')
+        res.send(getAllChat)
     } catch (error) {
         res.status(500).send({ message: 'Internal Server Error' })
     }

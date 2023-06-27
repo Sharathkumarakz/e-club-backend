@@ -39,12 +39,10 @@ io.on('connection', (socket) => {
 
   socket.on('join',function(data){
   socket.join(data.room)
-  console.log(data.user,'joined to the room',data.room);
   socket.broadcast.to(data.room).emit('newUserJoined',{user:data.user,message:'joining '})
   })
 
   socket.on('leave',function(data){
-    console.log(data.user,'left to the room',data.room);
     socket.broadcast.to(data.room).emit('leftRoom',{user:data.user,message:'leaving '})
     socket.leave(data.room)
     })

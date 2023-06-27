@@ -8,6 +8,11 @@ const Finance=require('../models/finance');
         try {
             const { username,reason,date,amount,status } = req.body;
             const check = await Club.findOne({_id:req.params.id}); 
+            if(!check){
+                return res.status(400).send({
+                    message: "Club not found "
+                });  
+            }
             const finance = new Finance({
                 clubName:check._id,
                 name:username,

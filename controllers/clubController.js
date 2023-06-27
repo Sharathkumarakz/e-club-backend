@@ -52,7 +52,7 @@ const clubRegister = async (req, res, next) => {
       }
       if (presidentActive.email === secretory || presidentActive.email === treasurer) {
         return res.status(400).send({
-          message: "You get a president role, so you cant be a treasurer or secretory!"
+          message: "You will get a president role, so you cant be a treasurer or secretory!"
         })
       }
       const changeP = await bcrypt.genSalt(10)
@@ -67,7 +67,7 @@ const clubRegister = async (req, res, next) => {
         secretory: secretoryActive._id,
         treasurer: treasurerActive._id
       })
-      const added = await club.save();
+     await club.save();
       res.json({
         message: "success"
       })
@@ -81,7 +81,6 @@ const clubRegister = async (req, res, next) => {
 let joinClub = async (req, res, next) => {
   try {
     let found = await Club.findOne({ clubName: req.body.clubName });
-
     if (found) {
       if (!(await bcrypt.compare(req.body.securityCode, found.securityCode))) {
         return res.status(404).send({
@@ -106,7 +105,7 @@ let joinClub = async (req, res, next) => {
           },
         });
         if (!existingUser) {
-          let Update = await User.updateOne(
+           await User.updateOne(
             { _id: claims._id },
             { $addToSet: { clubs: { $each: [{ clubName: req.body.clubName, password: req.body.securityCode, club: found._id }] } } });
         }
@@ -140,7 +139,7 @@ let joinClub2 = async (req, res, next) => {
             message: "UnAuthenticated"
           })
         }
-        const result = await User.updateOne(
+       await User.updateOne(
           { _id: claims._id },
           { $pull: { clubs: { clubName: req.body.clubName } } }
         );
@@ -149,14 +148,16 @@ let joinClub2 = async (req, res, next) => {
         const cookie = req.cookies['jwt']
         const claims = jwt.verify(cookie, "TheSecretKey")
         if (!claims) {
+          
           return res.status(401).send({
             message: "UnAuthenticated"
           })
         }
+        
         if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString() || found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
           return res.json({ authenticated: true, id: found._id });
         } else {
-          const result = await User.updateOne(
+         await User.updateOne(
             { _id: claims._id },
             { $pull: { clubs: { clubName: req.body.clubName } } }
           );
@@ -164,9 +165,18 @@ let joinClub2 = async (req, res, next) => {
         }
       }
     } else {
-      return res.status(404).send({
-        message: "There is no such club"
-      })
+      const cookie = req.cookies['jwt']
+      const claims = jwt.verify(cookie, "TheSecretKey")
+      if (!claims) {  
+        return res.status(401).send({
+          message: "UnAuthenticated"
+        })
+      }
+     await User.updateOne(
+        { _id: claims._id },
+        { $pull: { clubs: { clubName: req.body.clubName } } }
+      );
+      return res.json({ changed: true })
     }
   } catch (error) {
     next(error);
@@ -322,7 +332,7 @@ const addMember = async (req, res, next) => {
     let isAvailable = await Club.findOne({ _id: req.params.id })
     if (!isAvailable.members.includes(userFound._id)) {
       if (found) {
-        let adding = await Club.updateOne({ _id: req.params.id }, { $push: { members: userFound._id } })
+        await Club.updateOne({ _id: req.params.id }, { $push: { members: userFound._id } })
         let gettingMember = await Club.findById(req.params.id).populate('members').exec();
         res.send(gettingMember)
       }
@@ -339,17 +349,6 @@ const addMember = async (req, res, next) => {
 }
 
 
-//GET MEMBER OF A SPECIFIED CLUB
-// const getMembers = async (req, res, next) => {
-//   try {
-//     const club = await Club.findById(req.params.id).populate('members').exec();
-//     res.send(club);
-//   } catch (error) {
-//     return res.status(401).send({
-//       message: "Unauthenticated"
-//     });
-//   }
-// };
 
 //GET MEMBER OF A SPECIFIED CLUB
 const getMembers = async (req, res, next) => {
@@ -373,7 +372,7 @@ const getMembers = async (req, res, next) => {
 const deleteMembers = async (req, res, next) => {
   try {
     let user = await User.findOne({ email: req.body.user })
-    let adding = await Club.updateOne({ _id: req.body.club }, { $pull: { members: user._id } })
+    await Club.updateOne({ _id: req.body.club }, { $pull: { members: user._id } })
     const club = await Club.findById(req.body.club).populate('members').exec();
     res.send(club);
   } catch (error) {
@@ -390,14 +389,14 @@ const editClubProfile = async (req, res, next) => {
     const clubnameFound = await Club.findOne({ clubName: req.body.clubName })
     if (clubnameFound) {
       if (req.body.clubName === clubnameFound.clubName && clubnameFound.secretory.toString() === club.secretory.toString() && club.president.toString() === clubnameFound.president.toString() && clubnameFound.registerNo === club.registerNo) {
-        let update = await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, address: req.body.place, category: req.body.category, registerNo: req.body.regiterNo, } })
+        await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, address: req.body.place, category: req.body.category, registerNo: req.body.regiterNo, } })
       } else {
         return res.status(401).send({
           message: "Club name is not available"
         });
       }
     } else {
-      let update = await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, address: req.body.place, category: req.body.category, registerNo: req.body.regiterNo } })
+     await Club.updateOne({ _id: req.params.id }, { $set: { clubName: req.body.clubName, about: req.body.about, address: req.body.place, category: req.body.category, registerNo: req.body.regiterNo } })
     }
     const gettingClub = await Club.findOne({ _id: req.params.id })
     const { password, ...data } = await gettingClub.toJSON()
@@ -498,7 +497,6 @@ module.exports = {
   deletePost,
   userRole,
   addMember,
-  // getMembers,
   deleteMembers,
   editClubProfile,
   updateSecurityCode,

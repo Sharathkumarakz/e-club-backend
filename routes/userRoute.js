@@ -59,7 +59,7 @@ uRoute.post('/club/addEvent/:id',eventsController.addEvent)
 uRoute.get('/club/events/:id',eventsController.getEvents)
 uRoute.post('/club/deleteEvent/:id',eventsController.deleteEvent)
 
-//CLUB USER AUTHENTICATION
+//MAIl USER AUTHENTICATION
 uRoute.get('/user/:id/verify/:token',userController.verify)
 uRoute.get('/user/clubs',userController.getClubs)
 

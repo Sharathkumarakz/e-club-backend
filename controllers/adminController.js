@@ -18,7 +18,7 @@ const adminlogin = async (req, res) => {
     if (!(req.body.password == GettingUser.password)) {
         return res.status(404).send({
             message: "Password is Incorrect"
-        })
+        }) 
     }
     const token = jwt.sign({ _id: GettingUser._id }, "TheSecretKeyofAdmin")
     res.cookie("jwtAdmin", token, {

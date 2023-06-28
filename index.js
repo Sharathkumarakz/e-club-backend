@@ -1,4 +1,6 @@
 
+                  // E-CLUB 
+
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -7,11 +9,12 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const http = require('http').createServer(app);
 const fileUpload=require('express-fileupload');
+require('dotenv').config()
 
 //SOCKET
 const io = require('socket.io')(http, {
   cors: {
-    origin: 'http://localhost:4200',
+    origin: `${process.env.FRONTEND_URL}`,
     methods: ['GET', 'POST'],
     allowedHeaders: ['Authorization', 'Content-Type'],
     credentials: true
@@ -26,7 +29,7 @@ app.use(fileUpload({
 //CORS
 app.use(cors({
   credentials: true,
-  origin: ['http://localhost:4200']
+  origin: [`${process.env.FRONTEND_URL}`]
 }));
 
 app.use(cookieParser());

@@ -23,7 +23,7 @@ const storeChat = async (req, res, next) => {
 //TO GET CHAT OF A SPECIFIED CLUB
 const getChat = async (req, res, next) => {
     try {  
-        let getAllChat = await Chat.find({ room: req.params.id }).sort({ date: 1 }).populate('user')
+        const getAllChat = await Chat.find({ room: req.params.id }).sort({ date: 1 }).populate('user')
         res.send(getAllChat)
     } catch (error) {
         res.status(500).send({ message: 'Internal Server Error' })
@@ -33,7 +33,7 @@ const getChat = async (req, res, next) => {
 //ADDING USER IN ACTIVE MEMBERS LIST
 const joiningToChat = async (req, res, next) => {
     try {
-        let success = await Club.updateOne(
+        const success = await Club.updateOne(
             { _id: req.body.room },
             { $addToSet: { activeUsers: req.body.user._id } }
         );
@@ -88,8 +88,8 @@ const conferenceSeting = async (req, res, next) => {
 //TO REMOVE VIDEO CONFERENCE LINK
 const updateConference = async (req, res, next) => {
     try {
-        let clubUpdate = await Club.updateOne({ _id: req.params.id }, { $set: { conference: null } })
-        res.send(clubUpdate)
+        let conferenceAdded = await Club.updateOne({ _id: req.params.id }, { $set: { conference: null } })
+        res.send(conferenceAdded)
     } catch (error) {
         res.status(500).send({ message: 'Internal Server Error' })
     }

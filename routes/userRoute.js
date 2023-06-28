@@ -31,7 +31,7 @@ uRoute.post('/update/profile',userController.profileUpdating)
 //REGISTRATION AND JOINING TO A CLUB
 uRoute.post('/register/club',clubController.clubRegister)
 uRoute.post('/join/club',clubController.joinClub)
-uRoute.post('/profile/join/club',clubController.joinClub2)
+uRoute.post('/profile/join/club',clubController.joinClubFromProfile)
 
 //USER CLUB DETAILS
 uRoute.get('/club/:id',clubController.clubData)
@@ -42,7 +42,6 @@ uRoute.get('/club/posts/:id',clubController.getPosts)
 uRoute.post('/club/deletePost/:id',clubController.deletePost)
 uRoute.get('/club/roleAuthentication/:id',clubController.userRole)
 uRoute.post('/club/addMember/:id',clubController.addMember)
-// uRoute.post('/club/members/:id',clubController.getMembers)
 uRoute.get('/club/memberslist/:id',clubController.getMembers)
 uRoute.post('/club/deleteMember',clubController.deleteMembers)
 uRoute.post('/club/editClubProfile/:id',clubController.editClubProfile)

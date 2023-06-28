@@ -6,6 +6,9 @@ const Token = require('../models/token');
 const sendEmail= require('../utils/sendEmail')
 const crypto=require('crypto')
 const{uploadToCloudinary,removeFromCloudinary} =require('../middlewares/cloudinary')
+require('dotenv').config()
+
+
 
 //USER REGISTRATION
 const userRegister = async (req, res, next) => {
@@ -29,9 +32,9 @@ const userRegister = async (req, res, next) => {
             userId:added._id,
             token:token
           }).save();
-          const userDetails=await User.findOne({email:email})
-           const url=`http://localhost:4200/user/${added._id}/verify/${Ttoken.token}`
-            await sendEmail(user.email,"Verify Email",url)
+           await User.findOne({email:email})
+           const url=`${process.env.FRONTEND_URL}/user/${added._id}/verify/${Ttoken.token}`
+         sendEmail(user.email,"Verify Email",url)
         res.status(201).send({message:"An Email has been sent to your account please Verify"})
     } catch (error) {
         next(error);
@@ -91,8 +94,8 @@ const userLogin = async (req, res, next) => {
                 userId:user._id,
                 token:crypto.randomBytes(32).toString("hex")
               }).save();
-               const url=`http://localhost:4200/user/${user._id}/verify/${Ttoken.token}`
-                await sendEmail(user.email,"Verify Email",url)
+               const url=`${process.env.FRONTEND_URL}/user/${user._id}/verify/${Ttoken.token}`
+             sendEmail(user.email,"Verify Email",url)
            }
         res.status(400).send({message:"An Email has been sent to your account please Verify"})
         }
@@ -204,25 +207,20 @@ const viewProfile = async (req, res, next) => {
 //USER PROFILE PICTURE UPDATION
 const profilePictureUpdate = async (req, res, next) => {
     try {
-   
         const cookie = req.cookies['jwt'];
         const claims = jwt.verify(cookie, "TheSecretKey");
         if (!claims) {
             return res.status(401).send({
                 message: "Unauthenticated"
             });
-        }
-     
+        }  
         const file = req.files.image;
   const userdetails = await User.findOne({ _id: claims._id });
       if(userdetails.imagePublicId){
     await removeFromCloudinary(userdetails.imagePublicId)
       }
-  
-        const image=await uploadToCloudinary(file.tempFilePath,"users-profile-pictures")
-   
+        const image=await uploadToCloudinary(file.tempFilePath,"users-profile-pictures") 
         await User.updateOne({ _id: claims._id }, { $set: { image: image.url,imagePublicId:image.public_id} });
-    
           const user = await User.findOne({ _id: claims._id });
         const { password, ...data } = await user.toJSON();
         res.send(data);
@@ -239,20 +237,7 @@ const profileUpdating = async (req, res, next) => {
         const { name, address, about, phone } = req.body;
         const cookie = req.cookies['jwt'];
         const claims = jwt.verify(cookie, "TheSecretKey");
-        const updateFields = {};
-        if (name) {
-            updateFields.name = name;
-        }
-        if (address) {
-            updateFields.address = address;
-        }
-        if (about) {
-            updateFields.about = about;
-        }
-        if (phone) {
-            updateFields.phone = phone;
-        }
-        await User.updateOne({ _id: claims._id }, { $set: updateFields });
+        await User.updateOne({ _id: claims._id }, { $set:{name:name,address:address,about:about,phone:phone} });
         let data=await User.findOne({ _id: claims._id },)
         res.send(data);
     } catch (error) {
@@ -316,8 +301,8 @@ const changePassword = async (req, res, next) => {
                 userId:user._id,
                 token:crypto.randomBytes(32).toString("hex")
               }).save();
-               const url=`http://localhost:4200/user/${user._id}/changePassword/${Ttoken.token}`
-                await sendEmail(user.email,"E-club Change Password",url)
+               const url=`${process.env.FRONTEND_URL}/user/${user._id}/changePassword/${Ttoken.token}`
+              sendEmail(user.email,"E-club Change Password",url)
            }
         res.status(400).send({message:"An Email has been sent to your account "})
         }

@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Club = require('../models/club');
 const Post = require('../models/post');
-const sendEmail= require('../utils/sendEmail')
+const sendEmail = require('../utils/sendEmail')
 const { uploadToCloudinary, removeFromCloudinary } = require('../middlewares/cloudinary')
 
 
@@ -49,6 +49,7 @@ const clubRegister = async (req, res, next) => {
           message: "You will get a president role, so you cant be a treasurer or secretory!"
         })
       }
+
       const changeP = await bcrypt.genSalt(10)
       const hashedcode = await bcrypt.hash(securityCode, changeP)
       const club = new Club({
@@ -62,9 +63,22 @@ const clubRegister = async (req, res, next) => {
         treasurer: treasurerActive._id
       })
       await club.save();
+      //actvate club admins profile login
+      await User.updateOne(
+        { _id: presidentActive._id },
+        { $addToSet: { clubs: { $each: [{ clubName: clubName, password: hashedcode, club: club._id }] } } });
 
-       sendEmail(secretory,`E-club Registration",'Hello,\n\nSubject: Invitation to Join as Secretory - ${clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Secretory.\n\n\n\nBest regards,\n\n${presidentActive.name}\n${presidentActive.email}`)
-       sendEmail(treasurer,`E-club Registration",'Hello,\n\nSubject: Invitation to Join as Treasurer - ${clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Treasurer.\n\n\n\nBest regards,\n\n${presidentActive.name}\n${presidentActive.email}`) 
+      await User.updateOne(
+        { _id: secretoryActive._id },
+        { $addToSet: { clubs: { $each: [{ clubName: clubName, password: hashedcode, club: club._id }] } } });
+
+      await User.updateOne(
+        { _id: treasurerActive._id },
+        { $addToSet: { clubs: { $each: [{ clubName: clubName, password: hashedcode, club: club._id }] } } });
+
+
+      sendEmail(secretory, `E-club Registration",'Hello,\n\nSubject: Invitation to Join as Secretory - ${clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Secretory.\n\n\n\nBest regards,\n\n${presidentActive.name}\n${presidentActive.email}`)
+      sendEmail(treasurer, `E-club Registration",'Hello,\n\nSubject: Invitation to Join as Treasurer - ${clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Treasurer.\n\n\n\nBest regards,\n\n${presidentActive.name}\n${presidentActive.email}`)
       res.json({
         message: "success"
       })
@@ -79,7 +93,7 @@ let joinClub = async (req, res, next) => {
   try {
     let found = await Club.findOne({ clubName: req.body.clubName });
     if (found) {
-      if (!(await bcrypt.compare(req.body.securityCode, found.securityCode))) {
+      if (!await bcrypt.compare(req.body.securityCode,found.securityCode)) {
         return res.status(404).send({
           message: "secretCode is Incorrect"
         })
@@ -95,8 +109,8 @@ let joinClub = async (req, res, next) => {
           _id: claims._id,
           clubs: {
             $elemMatch: {
-              clubName: req.body.clubName,
-              password: req.body.securityCode,
+              clubName: found.clubName,
+              password: found.securityCode,
               club: found._id
             },
           },
@@ -104,7 +118,17 @@ let joinClub = async (req, res, next) => {
         if (!existingUser) {
           await User.updateOne(
             { _id: claims._id },
-            { $addToSet: { clubs: { $each: [{ clubName: req.body.clubName, password: req.body.securityCode, club: found._id }] } } });
+            {
+              $addToSet: {
+                clubs: {
+                  $each: [{
+                    clubName: found.clubName,
+                    password: found.securityCode,
+                    club: found._id
+                  }]
+                }
+              }
+            });
         }
         if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString() || found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
           return res.json({ authenticated: true, id: found._id });
@@ -126,40 +150,10 @@ let joinClub = async (req, res, next) => {
 //JOINING TO A CLUB FROM USER PROFILE
 let joinClubFromProfile = async (req, res, next) => {
   try {
-    let found = await Club.findOne({ clubName: req.body.clubName });
+    console.log(req.body);
+    let found = await Club.findOne({ _id: req.body.club });
     if (found) {
-      if (!(await bcrypt.compare(req.body.securityCode, found.securityCode))) {
-        const cookie = req.cookies['jwt']
-        const claims = jwt.verify(cookie, "TheSecretKey")
-        if (!claims) {
-          return res.status(401).send({
-            message: "UnAuthenticated"
-          })
-        }
-        await User.updateOne(
-          { _id: claims._id },
-          { $pull: { clubs: { clubName: req.body.clubName } } }
-        );
-        return res.json({ changed: true })
-      } else {
-        const cookie = req.cookies['jwt']
-        const claims = jwt.verify(cookie, "TheSecretKey")
-        if (!claims) {
-          return res.status(401).send({
-            message: "UnAuthenticated"
-          })
-        }
-        if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString() || found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
-          return res.json({ authenticated: true, id: found._id });
-        } else {
-          await User.updateOne(
-            { _id: claims._id },
-            { $pull: { clubs: { clubName: req.body.clubName } } }
-          );
-          return res.json({ notAllowed: true })
-        }
-      }
-    } else {
+      console.log("found");
       const cookie = req.cookies['jwt']
       const claims = jwt.verify(cookie, "TheSecretKey")
       if (!claims) {
@@ -167,11 +161,24 @@ let joinClubFromProfile = async (req, res, next) => {
           message: "UnAuthenticated"
         })
       }
-      await User.updateOne(
-        { _id: claims._id },
-        { $pull: { clubs: { clubName: req.body.clubName } } }
-      );
-      return res.json({ changed: true })
+      // await User.updateOne(
+      //   { _id: claims._id },
+      //   { $pull: { clubs: { clubName: req.body.clubName } } }
+      // );
+      if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString() || found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
+        return res.json({ authenticated: true, id: found._id });
+      } else {
+        // await User.updateOne(
+        //   { _id: claims._id },
+        //   { $pull: { clubs: { clubName: req.body.clubName } } }
+        // );
+        return res.json({ notAllowed: true })
+      }
+    }
+    else {
+      return res.status(401).send({
+        message: "Unauthenticated"
+      });
     }
   } catch (error) {
     next(error);
@@ -229,7 +236,6 @@ const profilePictureUpdate = async (req, res, next) => {
   }
 }
 
-
 //TO ADD A POST OF CLUB
 const addPost = async (req, res, next) => {
   try {
@@ -256,7 +262,7 @@ const addPost = async (req, res, next) => {
 //GET ALL POSTS OF A SPECIFIED CLUB
 const getPosts = async (req, res, next) => {
   try {
-    const gettingPost = await Post.find({ clubName: req.params.id })
+    const gettingPost = await Post.find({ clubName: req.params.id }).sort({ _id: -1 })
     res.send(gettingPost)
   } catch (error) {
     return res.status(401).send({
@@ -308,7 +314,7 @@ const userRole = async (req, res, next) => {
 };
 
 
-//AD A MEMBER TO A CLUB
+//ADD A MEMBER TO A CLUB
 const addMember = async (req, res, next) => {
   try {
     let found = await Club.findOne({ _id: req.params.id });
@@ -320,27 +326,31 @@ const addMember = async (req, res, next) => {
         message: "UnAuthenticated"
       })
     }
-    let Author=await User.findOne({_id:claims._id})
+    let Author = await User.findOne({ _id: claims._id })
     if (!userFound) {
-      return res.status(404).send({
+      return res.status(401).send({
         message: "There is no such user"
       })
     }
     if (found.secretory.toString() === userFound._id.toString() || found.treasurer.toString() === userFound._id.toString() || found.president.toString() === userFound._id.toString()) {
-      return res.status(404).send({
+      return res.status(401).send({
         message: "You are a main part of this club so, can't add you as a member"
       })
     }
+
     let isAvailable = await Club.findOne({ _id: req.params.id })
     if (!isAvailable.members.includes(userFound._id)) {
       if (found) {
         await Club.updateOne({ _id: req.params.id }, { $push: { members: userFound._id } })
-        sendEmail(userFound.email,`E-club Invitation",'Hello,\n\nSubject: Invitation to Join as Member - ${found.clubName}\n\nI hope this email finds you in good spirits. On behalf of ${found.clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Member.\n\n\n\nBest regards,\n\n${Author.name}\n${Author.email}`) 
+        sendEmail(userFound.email, `E-club Invitation",'Hello,\n\nSubject: Invitation to Join as Member - ${found.clubName}\n\nI hope this email finds you in good spirits. On behalf of ${found.clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Member.\n\n\n\nBest regards,\n\n${Author.name}\n${Author.email}`)
         let gettingMember = await Club.findById(req.params.id).populate('members').exec();
+        await User.updateOne(
+          { _id: userFound._id },
+          { $addToSet: { clubs: { $each: [{ clubName: found.clubName, password: found.securityCode, club: found._id }] } } });
         res.send(gettingMember)
       }
     } else {
-      return res.status(404).send({
+      return res.status(401).send({
         message: "user already in"
       })
     }
@@ -371,12 +381,25 @@ const getMembers = async (req, res, next) => {
   }
 };
 
-//TO DELETE A SPECIFIED CLUB
+//TO DELETE A SPECIFIED CLUB MEMBER
 const deleteMembers = async (req, res, next) => {
   try {
     let user = await User.findOne({ email: req.body.user })
     await Club.updateOne({ _id: req.body.club }, { $pull: { members: user._id } })
     const club = await Club.findById(req.body.club).populate('members').exec();
+    const cookie = req.cookies['jwt']
+    const claims = jwt.verify(cookie, "TheSecretKey")
+    if (!claims) {
+      return res.status(401).send({
+        message: "UnAuthenticated"
+      })
+    }
+    let Author = await User.findOne({ _id: claims._id })
+    sendEmail(user.email, `E-club ",'Hello,\n\nSubject: Membership cancel- ${club.clubName}\n\n Your membership hasbeen cancelled from ${club.clubName},\n\n\n\nBest regards,\n\n${Author.name}\n${Author.email}`)
+    await User.updateOne(
+      { email: req.body.user },
+      { $pull: { clubs: { club: club._id } } }
+    );
     res.send(club);
   } catch (error) {
     return res.status(401).send({
@@ -446,7 +469,7 @@ const updateCommitee = async (req, res, next) => {
         message: "UnAuthenticated"
       })
     }
-    let auther=await User.findOne({_id:claims._id})
+    let auther = await User.findOne({ _id: claims._id })
     if (!president) {
       return res.status(401).send({
         message: "there is no such person for being president"
@@ -464,36 +487,51 @@ const updateCommitee = async (req, res, next) => {
         message: "there is no such person for being Treasurer"
       });
     }
+ 
     let club = await Club.findOne({ _id: req.params.id })
-    if(!(president._id.toString() === club.president.toString() || secretory._id.toString()=== club.president.toString()|| treasurer._id.toString()=== club.president.toString())){
-      await Club.updateOne({ _id:req.params.id }, { $push: { members: club.president} })
+    //handling new user
+   let data=new Set()
+   data.add(club.president.toString())
+   data.add(club.secretory.toString())
+   data.add(club.treasurer.toString())
+   club.members.forEach((member) => {
+    data.add(member.toString())
+   })
+    if(!data.has(president._id.toString()) || !data.has(secretory._id.toString()) || !data.has(treasurer._id.toString())){
+      return res.status(401).send({
+        message: "Club admins can't be a new joinee"
+      });
     }
-    if(!(president._id.toString() === club.secretory.toString() || secretory._id.toString()=== club.secretory.toString()|| treasurer._id.toString()=== club.secretory.toString())){
-      await Club.updateOne({ _id:req.params.id }, { $push: { members: club.secretory} })
+    if (!(president._id.toString() === club.president.toString() || secretory._id.toString() === club.president.toString() || treasurer._id.toString() === club.president.toString())) {
+      await Club.updateOne({ _id: req.params.id }, { $push: { members: club.president } })
     }
-    if(!(president._id.toString() === club.treasurer.toString() || secretory._id.toString()=== club.treasurer.toString()|| treasurer._id.toString()=== club.treasurer.toString())){
-      await Club.updateOne({ _id:req.params.id }, { $push: { members: club.treasurer} })
+    if (!(president._id.toString() === club.secretory.toString() || secretory._id.toString() === club.secretory.toString() || treasurer._id.toString() === club.secretory.toString())) {
+      await Club.updateOne({ _id: req.params.id }, { $push: { members: club.secretory } })
+    }
+    if (!(president._id.toString() === club.treasurer.toString() || secretory._id.toString() === club.treasurer.toString() || treasurer._id.toString() === club.treasurer.toString())) {
+      await Club.updateOne({ _id: req.params.id }, { $push: { members: club.treasurer } })
     }
     let update = await Club.updateOne({ _id: req.params.id }, { $set: { president: president._id, secretory: secretory._id, treasurer: treasurer._id } })
+    
     let clubDetails = await Club.findOne({ _id: req.params.id })
     if (clubDetails.members.includes(president._id)) {
       await Club.updateOne({ _id: req.params.id }, { $pull: { members: president._id } })
     }
     if (clubDetails.members.includes(secretory._id)) {
-      await Club.updateOne({ _id:req.params.id }, { $pull: { members: secretory._id } })
+      await Club.updateOne({ _id: req.params.id }, { $pull: { members: secretory._id } })
     }
     if (clubDetails.members.includes(treasurer._id)) {
       await Club.updateOne({ _id: req.params.id }, { $pull: { members: treasurer._id } })
     }
-    if(auther.email!=president.email){
-      sendEmail(president.email,`E-club Commitee Change",'Hello,\n\nSubject: Invitation to Join as President - ${clubDetails.clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubDetails.clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new President.\n\n\n\nBest regards,\n\n${auther.name}\n${auther.email}`) 
-    }
-    if(auther.email!=secretory.email){
-    sendEmail(secretory.email,`E-club Commitee Change",'Hello,\n\nSubject: Invitation to Join as Secretory - ${clubDetails.clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubDetails.clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new secretory.\n\n\n\nBest regards,\n\n${auther.name}\n${auther.email}`)   
-    }
-    if(auther.email!=treasurer.email){
-    sendEmail(treasurer.email,`E-club Commitee Change",'Hello,\n\nSubject: Invitation to Join as Treasurer - ${clubDetails.clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubDetails.clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Treasurer.\n\n\n\nBest regards,\n\n${auther.name}\n${auther.email}`) 
-    }
+    if (auther.email != president.email) {
+      sendEmail(president.email, `E-club Commitee Change",'Hello,\n\nSubject: Invitation to Join as President - ${clubDetails.clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubDetails.clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new President.\n\n\n\nBest regards,\n\n${auther.name}\n${auther.email}`)
+       }
+    if (auther.email != secretory.email) {
+      sendEmail(secretory.email, `E-club Commitee Change",'Hello,\n\nSubject: Invitation to Join as Secretory - ${clubDetails.clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubDetails.clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new secretory.\n\n\n\nBest regards,\n\n${auther.name}\n${auther.email}`)
+        }
+    if (auther.email != treasurer.email) {
+      sendEmail(treasurer.email, `E-club Commitee Change",'Hello,\n\nSubject: Invitation to Join as Treasurer - ${clubDetails.clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubDetails.clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Treasurer.\n\n\n\nBest regards,\n\n${auther.name}\n${auther.email}`)
+     }
     res.send(update)
   } catch (error) {
     return res.status(401).send({
@@ -527,6 +565,9 @@ const getAllClubs = async (req, res, next) => {
   }
 }
 
+
+
+
 module.exports = {
   clubRegister,
   joinClub,
@@ -544,5 +585,5 @@ module.exports = {
   joinClubFromProfile,
   getMembers,
   clubDetails,
-  getAllClubs
+  getAllClubs,
 }

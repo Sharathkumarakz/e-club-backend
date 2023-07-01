@@ -28,10 +28,12 @@ uRoute.get('/profile',userController.viewProfile)
 uRoute.post('/update/profile',userController.profileUpdating)
 
 
-//REGISTRATION AND JOINING TO A CLUB
+//REGISTRATION,LEAVING AND JOINING TO A CLUB
 uRoute.post('/register/club',clubController.clubRegister)
 uRoute.post('/join/club',clubController.joinClub)
 uRoute.post('/profile/join/club',clubController.joinClubFromProfile)
+uRoute.get('/leaveClub/:id',userController.leaveFromClub)
+
 
 //USER CLUB DETAILS
 uRoute.get('/club/:id',clubController.clubData)

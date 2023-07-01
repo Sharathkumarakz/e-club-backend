@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const Token = require('../models/token');
+const Club= require('../models/club');
 const sendEmail= require('../utils/sendEmail')
 const crypto=require('crypto')
 const{uploadToCloudinary,removeFromCloudinary} =require('../middlewares/cloudinary')
@@ -169,7 +170,7 @@ const userAuth = async (req, res, next) => {
         }
         const user = await User.findOne({ _id: claims._id });
         if(user.isBlocked===true){
-            return res.status(404).send({
+            return res.status(401).send({
                 message: "You are blocked"
             });  
         }
@@ -237,8 +238,13 @@ const profileUpdating = async (req, res, next) => {
         const { name, address, about, phone } = req.body;
         const cookie = req.cookies['jwt'];
         const claims = jwt.verify(cookie, "TheSecretKey");
+        if(!claims){
+            return res.status(401).send({
+                message: "Unauthenticated"
+            });   
+        }
         await User.updateOne({ _id: claims._id }, { $set:{name:name,address:address,about:about,phone:phone} });
-        let data=await User.findOne({ _id: claims._id },)
+        let data=await User.findOne({ _id: claims._id })
         res.send(data);
     } catch (error) {
         next(error);
@@ -326,6 +332,44 @@ const logOut = async (req, res, next) => {
 };
 
 
+const leaveFromClub = async (req, res, next) => {
+    try {
+        console.log(req.params.id);
+     const found =await Club.findOne({_id:req.params.id})
+     if(found){
+      const cookie = req.cookies['jwt'];
+      console.log(cookie);
+      const claims = jwt.verify(cookie,"TheSecretKey");
+      if (!claims) {
+        return res.status(401).send({
+          message: "UnAuthenticated"
+        });
+      }
+      console.log(claims._id);
+     if (found.treasurer.toString() === claims._id.toString() ){
+      await Club.updateOne({_id:found._id},{$set:{treasurer:null}})
+      await User.updateOne(
+        { _id:claims._id },
+        { $pull: { clubs: { club:found._id } } }
+      );
+      return res.json({ changed:true });
+     
+     }else{
+      await Club.updateOne({ _id:found._id }, { $pull: { members:claims._id } })
+      await User.updateOne(
+        { _id:claims._id },
+        { $pull: { clubs: { club:found._id } } }
+      );
+      return res.json({ changed:true });
+ 
+    }} }catch (error) {
+      
+      return res.status(401).send({
+        message: "Clubs detail error"
+      });
+    }}
+
+
 module.exports = {
     userRegister,
     userLogin,
@@ -338,6 +382,7 @@ module.exports = {
     verify,
     getClubs,
     changePassword,
+    leaveFromClub
    
 };
 

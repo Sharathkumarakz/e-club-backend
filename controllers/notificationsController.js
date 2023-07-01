@@ -43,6 +43,7 @@ const getNotifications = async (req, res, next) => {
     res.status(500).send({ message: 'Internal Server Error' })
   }
 }
+
 module.exports = {
   sendNotification,
   getNotifications

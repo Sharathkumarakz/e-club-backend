@@ -6,7 +6,8 @@ const Token = require('../models/token');
 const Club= require('../models/club');
 const sendEmail= require('../utils/sendEmail')
 const crypto=require('crypto')
-const{uploadToCloudinary,removeFromCloudinary} =require('../middlewares/cloudinary')
+const{uploadToCloudinary,removeFromCloudinary} =require('../middlewares/cloudinary');
+
 require('dotenv').config()
 
 
@@ -61,14 +62,8 @@ const userLogin = async (req, res, next) => {
                             message: "User not found"
                         });
                     }
-                    const token = jwt.sign({ _id: user._id }, "TheSecretKey");
-                    res.cookie("jwt", token, {
-                        httpOnly: true,
-                        maxAge: 24 * 60 * 60 * 1000
-                    });
-                    res.json({
-                        message: "success"
-                    });
+                    const token = jwt.sign({ _id: user._id }, process.env.JWT_USER_SECRETKEY);      
+                    res.status(200).json({token});              
         }else{
         const { email, password } = req.body;
         const user = await User.findOne({ email: email });
@@ -100,15 +95,9 @@ const userLogin = async (req, res, next) => {
            }
         res.status(400).send({message:"An Email has been sent to your account please Verify"})
         }
-        const token = jwt.sign({ _id: user._id }, "TheSecretKey");
-        res.cookie("jwt", token, {
-            httpOnly: true,
-            maxAge: 24 * 60 * 60 * 1000
-        });
-        res.json({
-            message: "success"
-        });
-    }
+        const token = jwt.sign({ _id: user._id },process.env.JWT_USER_SECRETKEY);
+         res.status(200).json({token});
+        }
     } catch (error) {
         next(error);
     }
@@ -124,14 +113,8 @@ const mailRegistration = async (req, res, next) => {
         const check = await User.findOne({ email: email })
         if (check) {
             const { _id } = await check.toJSON();
-            const token = jwt.sign({ _id: _id }, "TheSecretKey")
-            res.cookie("jwt", token, {
-                httpOnly: true,
-                maxAge: 24 * 60 * 60 * 1000
-            })
-            res.json({
-                message: "success"
-            })
+            const token = jwt.sign({ _id: _id },process.env.JWT_USER_SECRETKEY)
+            res.status(200).json({token});
         } else {
             const changeP = await bcrypt.genSalt(10)
             const hashedPassword = await bcrypt.hash(password, changeP)
@@ -143,14 +126,8 @@ const mailRegistration = async (req, res, next) => {
             })
             const added = await user.save();
             const { _id } = await added.toJSON();
-            const token = jwt.sign({ _id: _id }, "TheSecretKey")
-            res.cookie("jwt", token, {
-                httpOnly: true,
-                maxAge: 24 * 60 * 60 * 1000
-            })
-            res.json({
-                message: "success"
-            })
+            const token = jwt.sign({ _id: _id }, process.env.JWT_USER_SECRETKEY)
+            res.status(200).json({token});
         }
     } catch (error) {
         next(error);
@@ -161,14 +138,9 @@ const mailRegistration = async (req, res, next) => {
 //TO AUTHENTICATE A USER IS ACTIVE OR NOT
 const userAuth = async (req, res, next) => {
     try {
-        const cookie = req.cookies['jwt'];
-        const claims = jwt.verify(cookie, "TheSecretKey");
-        if (!claims) {
-            return res.status(401).send({
-                message: "Unauthenticated"
-            });
-        }
-        const user = await User.findOne({ _id: claims._id });
+
+        const claims = req.headers?.userId
+        const user = await User.findOne({ _id: claims });
         if(user.isBlocked===true){
             return res.status(401).send({
                 message: "You are blocked"
@@ -187,14 +159,9 @@ const userAuth = async (req, res, next) => {
 //VIEW PROFILE OF A USER
 const viewProfile = async (req, res, next) => {
     try {
-        const cookie = req.cookies['jwt'];
-        const claims = jwt.verify(cookie, "TheSecretKey");
-        if (!claims) {
-            return res.status(401).send({
-                message: "Unauthenticated"
-            });
-        }
-        const user = await User.findOne({ _id: claims._id });
+
+        const claims = req.headers?.userId
+        const user = await User.findOne({ _id: claims });
         const { password, ...data } = await user.toJSON();
         res.send(data);
     } catch (err) {
@@ -208,21 +175,15 @@ const viewProfile = async (req, res, next) => {
 //USER PROFILE PICTURE UPDATION
 const profilePictureUpdate = async (req, res, next) => {
     try {
-        const cookie = req.cookies['jwt'];
-        const claims = jwt.verify(cookie, "TheSecretKey");
-        if (!claims) {
-            return res.status(401).send({
-                message: "Unauthenticated"
-            });
-        }  
+        const claims = req.headers?.userId
         const file = req.files.image;
-  const userdetails = await User.findOne({ _id: claims._id });
+        const userdetails = await User.findOne({ _id: claims });
       if(userdetails.imagePublicId){
     await removeFromCloudinary(userdetails.imagePublicId)
       }
         const image=await uploadToCloudinary(file.tempFilePath,"users-profile-pictures") 
-        await User.updateOne({ _id: claims._id }, { $set: { image: image.url,imagePublicId:image.public_id} });
-          const user = await User.findOne({ _id: claims._id });
+        await User.updateOne({ _id: claims}, { $set: { image: image.url,imagePublicId:image.public_id} });
+          const user = await User.findOne({ _id: claims});
         const { password, ...data } = await user.toJSON();
         res.send(data);
     } catch (err) {
@@ -236,15 +197,9 @@ const profilePictureUpdate = async (req, res, next) => {
 const profileUpdating = async (req, res, next) => {
     try {
         const { name, address, about, phone } = req.body;
-        const cookie = req.cookies['jwt'];
-        const claims = jwt.verify(cookie, "TheSecretKey");
-        if(!claims){
-            return res.status(401).send({
-                message: "Unauthenticated"
-            });   
-        }
-        await User.updateOne({ _id: claims._id }, { $set:{name:name,address:address,about:about,phone:phone} });
-        let data=await User.findOne({ _id: claims._id })
+        const claims = req.headers.userId
+        await User.updateOne({ _id: claims}, { $set:{name:name,address:address,about:about,phone:phone} });
+        let data=await User.findOne({ _id: claims })
         res.send(data);
     } catch (error) {
         next(error);
@@ -269,17 +224,10 @@ const verify=async(req,res,next)=>{
 // GET CLUBS OF A SPECIFIED USER
 const getClubs= async (req, res) => {
     try {
-        const cookie = req.cookies['jwt'];
-        const claims = jwt.verify(cookie, "TheSecretKey");
-        if (!claims) {
-            return res.status(401).send({
-                message: "Unauthenticated"
-            });
-        }else{
+        const claims = req.headers?.userId
             let clubs = await User.findOne(
-                {_id:claims._id}).populate('clubs.club')
+                {_id:claims}).populate('clubs.club')
                 res.send(clubs);
-        }
     } catch (error) {
         res.status(500).send({message:'Internal Server Error'})
     }
@@ -308,7 +256,7 @@ const changePassword = async (req, res, next) => {
                 token:crypto.randomBytes(32).toString("hex")
               }).save();
                const url=`${process.env.FRONTEND_URL}/user/${user._id}/changePassword/${Ttoken.token}`
-              sendEmail(user.email,"E-club Change Password",url)
+              await sendEmail(user.email,"E-club Change Password",url)
            }
         res.status(400).send({message:"An Email has been sent to your account "})
         }
@@ -322,9 +270,6 @@ const changePassword = async (req, res, next) => {
 //USER LOGOUT
 const logOut = async (req, res, next) => {
     try {
-        res.cookie("jwt", "", {
-            maxAge: 0
-        });
         res.send({ message: "success" });
     } catch (error) {
         next(error);
@@ -334,30 +279,21 @@ const logOut = async (req, res, next) => {
 
 const leaveFromClub = async (req, res, next) => {
     try {
-        console.log(req.params.id);
      const found =await Club.findOne({_id:req.params.id})
      if(found){
-      const cookie = req.cookies['jwt'];
-      console.log(cookie);
-      const claims = jwt.verify(cookie,"TheSecretKey");
-      if (!claims) {
-        return res.status(401).send({
-          message: "UnAuthenticated"
-        });
-      }
-      console.log(claims._id);
-     if (found.treasurer.toString() === claims._id.toString() ){
+        const claims = req.headers?.userId
+     if (found.treasurer.toString() === claims.toString() ){
       await Club.updateOne({_id:found._id},{$set:{treasurer:null}})
       await User.updateOne(
-        { _id:claims._id },
+        { _id:claims },
         { $pull: { clubs: { club:found._id } } }
       );
       return res.json({ changed:true });
      
      }else{
-      await Club.updateOne({ _id:found._id }, { $pull: { members:claims._id } })
+      await Club.updateOne({ _id:found._id }, { $pull: { members:claims} })
       await User.updateOne(
-        { _id:claims._id },
+        { _id:claims },
         { $pull: { clubs: { club:found._id } } }
       );
       return res.json({ changed:true });

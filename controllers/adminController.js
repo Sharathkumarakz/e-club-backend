@@ -5,7 +5,7 @@ const Club = require('../models/club');
 const Admin = require('../models/admin');
 const Banner=require('../models/banner')
 const{uploadToCloudinary,removeFromCloudinary} =require('../middlewares/cloudinary')
-
+require('dotenv').config()
 
 //ADMIN LOGIN
 const adminlogin = async (req, res) => {
@@ -20,31 +20,24 @@ const adminlogin = async (req, res) => {
             message: "Password is Incorrect"
         }) 
     }
-    const token = jwt.sign({ _id: AdminDetails._id }, "TheSecretKeyofAdmin")
-    res.cookie("jwtAdmin", token, {
-        httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000
-    })
-    res.json({
-        message: "success"
-    })
+    const token = jwt.sign({ _id: AdminDetails._id }, process.env.JWT_ADMIN_SECRETKEY)
+    res.status(200).json({token});
 }
 
 
 //TO CHECK ADMIN ACTIVE OR NOT
 const adminIsActive = async (req, res, next) => {
     try {
-        const cookie = req.cookies['jwtAdmin']
-        const claims = jwt.verify(cookie, "TheSecretKeyofAdmin")
-        if (!claims) {
-            return res.status(401).send({
-                message: "UnAuthenticated"
-            })
-        } else {
-            const AdminDetails = await Admin.findOne({ _id: claims._id })
-            const { password, ...data } = await AdminDetails.toJSON()
-            res.send(data)
-        }
+            let claim =jwt.verify(req.body.token, process.env.JWT_ADMIN_SECRETKEY) 
+                if (claim) {
+                    const AdminDetails = await Admin.findOne({ _id: claim._id })
+                    const { password, ...data } = await AdminDetails.toJSON()
+                    res.send(data)
+                } else {
+                    return res.status(401).send({
+                        message: "UnAuthenticated"
+                    })
+                }
     } catch (err) {
         return res.status(401).send({
             welcome: "UnAuthenticated"
@@ -248,18 +241,6 @@ const getDashboard=async (req,res,next)=>{
 }
 
 
-//ADMIN LOGOUT
-const logOut = async (req, res, next) => {
-    try {
-        res.cookie("jwtAdmin", "", {
-            maxAge: 0
-        });
-        res.send({ message: "success" });
-    } catch (error) {
-        next(error);
-    }
-};
-
 
 module.exports = {
     adminlogin,
@@ -277,6 +258,5 @@ module.exports = {
     addBanner,
     getBanners,
     deleteBanner,
-    getDashboard,
-    logOut
+    getDashboard
 }

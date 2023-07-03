@@ -14,7 +14,7 @@ aRoute.post('/login',adminController.adminlogin)
 
 
 //ADMIN AUTH
-aRoute.get('/active',adminController.adminIsActive)
+aRoute.post('/active',adminController.adminIsActive)
 
 
 //GET CLUBS
@@ -44,9 +44,6 @@ aRoute.post('/deleteBanner',adminController.deleteBanner)
 aRoute.get('/dashboard',adminController.getDashboard)
 
 
-
-//ADMIN LOGOUT
-aRoute.post('/logout',adminController.logOut)
 
 
 module.exports = aRoute;

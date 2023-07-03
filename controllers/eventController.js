@@ -8,10 +8,9 @@ const Event = require('../models/events');
 //TO ADD AN EVENT
 const addEvent = async (req, res, next) => {
   try {
-    const cookie = req.cookies['jwt'];
-    const claims = jwt.verify(cookie, "TheSecretKey");
+    const claims = req.headers?.userId
     let clubData = await Club.findOne({ _id: req.params.id })
-    if (claims._id.toString() === clubData.president.toString()) {
+    if (claims.toString() === clubData.president.toString()) {
       const event = new Event({
         clubName: clubData._id,
         event: req.body.text,

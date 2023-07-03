@@ -19,14 +19,8 @@ const clubRegister = async (req, res, next) => {
         message: "This club name is not available"
       })
     } else {
-      const cookie = req.cookies['jwt']
-      const claims = jwt.verify(cookie, "TheSecretKey")
-      if (!claims) {
-        return res.status(401).send({
-          message: "UnAuthenticated"
-        })
-      }
-      let presidentActive = await User.findOne({ _id: claims._id }).exec()
+      const claims = req.headers?.userId
+      let presidentActive = await User.findOne({ _id: claims }).exec()
       let secretoryActive = await User.findOne({ email: secretory }).exec()
       let treasurerActive = await User.findOne({ email: treasurer }).exec()
       if (!presidentActive) {
@@ -98,15 +92,9 @@ let joinClub = async (req, res, next) => {
           message: "secretCode is Incorrect"
         })
       } else {
-        const cookie = req.cookies['jwt']
-        const claims = jwt.verify(cookie, "TheSecretKey")
-        if (!claims) {
-          return res.status(401).send({
-            message: "UnAuthenticated"
-          })
-        }
+        const claims = req.headers?.userId
         let existingUser = await User.findOne({
-          _id: claims._id,
+          _id: claims,
           clubs: {
             $elemMatch: {
               clubName: found.clubName,
@@ -117,7 +105,7 @@ let joinClub = async (req, res, next) => {
         });
         if (!existingUser) {
           await User.updateOne(
-            { _id: claims._id },
+            { _id: claims },
             {
               $addToSet: {
                 clubs: {
@@ -130,7 +118,7 @@ let joinClub = async (req, res, next) => {
               }
             });
         }
-        if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString() || found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
+        if (found.secretory.toString() === claims.toString() || found.treasurer.toString() === claims.toString() || found.president.toString() === claims.toString() || found.members.includes(claims)) {
           return res.json({ authenticated: true, id: found._id });
         } else {
           return res.json({ notAllowed: true })
@@ -150,28 +138,12 @@ let joinClub = async (req, res, next) => {
 //JOINING TO A CLUB FROM USER PROFILE
 let joinClubFromProfile = async (req, res, next) => {
   try {
-    console.log(req.body);
     let found = await Club.findOne({ _id: req.body.club });
     if (found) {
-      console.log("found");
-      const cookie = req.cookies['jwt']
-      const claims = jwt.verify(cookie, "TheSecretKey")
-      if (!claims) {
-        return res.status(401).send({
-          message: "UnAuthenticated"
-        })
-      }
-      // await User.updateOne(
-      //   { _id: claims._id },
-      //   { $pull: { clubs: { clubName: req.body.clubName } } }
-      // );
-      if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString() || found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
+      const claims = req.headers?.userId
+      if (found.secretory.toString() === claims.toString() || found.treasurer.toString() === claims.toString() || found.president.toString() === claims.toString() || found.members.includes(claims)) {
         return res.json({ authenticated: true, id: found._id });
       } else {
-        // await User.updateOne(
-        //   { _id: claims._id },
-        //   { $pull: { clubs: { clubName: req.body.clubName } } }
-        // );
         return res.json({ notAllowed: true })
       }
     }
@@ -189,14 +161,8 @@ let joinClubFromProfile = async (req, res, next) => {
 //GET CLUB DATA INCLUDING ALL POPULATED  DATAS
 const clubData = async (req, res, next) => {
   try {
-    const cookie = req.cookies['jwt']
-    const claims = jwt.verify(cookie, "TheSecretKey")
-    if (!claims) {
-      return res.status(401).send({
-        message: "UnAuthenticated"
-      })
-    }
-    let userdata = await User.findOne({ _id: claims._id })
+    const claims = req.headers?.userId
+    let userdata = await User.findOne({ _id: claims})
     const gettingClub = await Club.findOne({ _id: req.params.id }).populate('president').populate('secretory').populate('treasurer').populate('activeUsers')
     let data = gettingClub
     let user = { id: userdata._id }
@@ -293,14 +259,8 @@ const userRole = async (req, res, next) => {
   try {
     let found = await Club.findOne({ _id: req.params.id });
     if (found) {
-      const cookie = req.cookies['jwt'];
-      const claims = jwt.verify(cookie, "TheSecretKey");
-      if (!claims) {
-        return res.status(401).send({
-          message: "UnAuthenticated"
-        });
-      }
-      if (found.secretory.toString() === claims._id.toString() || found.treasurer.toString() === claims._id.toString() || found.president.toString() === claims._id.toString() || found.members.includes(claims._id)) {
+      const claims = req.headers?.userId
+      if (found.secretory.toString() === claims.toString() || found.treasurer.toString() === claims.toString() || found.president.toString() === claims.toString() || found.members.includes(claims)) {
         return res.json({ authenticated: true, id: found._id });
       } else {
         return res.json({ notAllowed: true })
@@ -319,14 +279,8 @@ const addMember = async (req, res, next) => {
   try {
     let found = await Club.findOne({ _id: req.params.id });
     let userFound = await User.findOne({ email: req.body.member })
-    const cookie = req.cookies['jwt']
-    const claims = jwt.verify(cookie, "TheSecretKey")
-    if (!claims) {
-      return res.status(401).send({
-        message: "UnAuthenticated"
-      })
-    }
-    let Author = await User.findOne({ _id: claims._id })
+    const claims = req.headers?.userId
+    let Author = await User.findOne({ _id: claims})
     if (!userFound) {
       return res.status(401).send({
         message: "There is no such user"
@@ -387,14 +341,8 @@ const deleteMembers = async (req, res, next) => {
     let user = await User.findOne({ email: req.body.user })
     await Club.updateOne({ _id: req.body.club }, { $pull: { members: user._id } })
     const club = await Club.findById(req.body.club).populate('members').exec();
-    const cookie = req.cookies['jwt']
-    const claims = jwt.verify(cookie, "TheSecretKey")
-    if (!claims) {
-      return res.status(401).send({
-        message: "UnAuthenticated"
-      })
-    }
-    let Author = await User.findOne({ _id: claims._id })
+    const claims = req.headers?.userId
+    let Author = await User.findOne({ _id: claims})
     sendEmail(user.email, `E-club ",'Hello,\n\nSubject: Membership cancel- ${club.clubName}\n\n Your membership hasbeen cancelled from ${club.clubName},\n\n\n\nBest regards,\n\n${Author.name}\n${Author.email}`)
     await User.updateOne(
       { email: req.body.user },
@@ -462,14 +410,8 @@ const updateSecurityCode = async (req, res, next) => {
 const updateCommitee = async (req, res, next) => {
   try {
     let president = await User.findOne({ email: req.body.presidentNew })
-    const cookie = req.cookies['jwt']
-    const claims = jwt.verify(cookie, "TheSecretKey")
-    if (!claims) {
-      return res.status(401).send({
-        message: "UnAuthenticated"
-      })
-    }
-    let auther = await User.findOne({ _id: claims._id })
+    const claims = req.headers?.userId
+    let auther = await User.findOne({ _id: claims})
     if (!president) {
       return res.status(401).send({
         message: "there is no such person for being president"

@@ -40,7 +40,6 @@ const updateFinance = async (req, res, next) => {
 //GET FINANCIAL DATAS(INCOME)
 const getFinancialDataIncome = async (req, res, next) => {
     try {
-        console.log('gettt');
         let financial = await Finance.find({ clubName: req.params.id, status: true }).sort({ _id: -1 })
         res.send(financial)
     } catch (error) {

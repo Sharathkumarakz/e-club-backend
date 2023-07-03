@@ -7,6 +7,8 @@ const Post = require('../models/post');
 const sendEmail = require('../utils/sendEmail')
 const { uploadToCloudinary, removeFromCloudinary } = require('../middlewares/cloudinary')
 
+require('dotenv').config()
+
 
 
 //REGISTRATION OF A CLUB
@@ -71,8 +73,8 @@ const clubRegister = async (req, res, next) => {
         { $addToSet: { clubs: { $each: [{ clubName: clubName, password: hashedcode, club: club._id }] } } });
 
 
-      sendEmail(secretory, `E-club Registration",'Hello,\n\nSubject: Invitation to Join as Secretory - ${clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Secretory.\n\n\n\nBest regards,\n\n${presidentActive.name}\n${presidentActive.email}`)
-      sendEmail(treasurer, `E-club Registration",'Hello,\n\nSubject: Invitation to Join as Treasurer - ${clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Treasurer.\n\n\n\nBest regards,\n\n${presidentActive.name}\n${presidentActive.email}`)
+     await sendEmail(secretory, `E-club Registration",'Hello,\n\nSubject: Invitation to Join as Secretory - ${clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Secretory.\n\n\n\nBest regards,\n\n${presidentActive.name}\n${presidentActive.email}`)
+     await sendEmail(treasurer, `E-club Registration",'Hello,\n\nSubject: Invitation to Join as Treasurer - ${clubName}\n\nI hope this email finds you in good spirits. On behalf of ${clubName}, I am pleased to extend our warmest congratulations and invite you to join our club as the new Treasurer.\n\n\n\nBest regards,\n\n${presidentActive.name}\n${presidentActive.email}`)
       res.json({
         message: "success"
       })
